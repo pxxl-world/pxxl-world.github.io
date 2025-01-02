@@ -45,7 +45,7 @@ canvas{
 
 #codeeditor {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   margin-top: 2em;
 
   position: relative;
@@ -73,4 +73,5 @@ canvas{
   background-color: #333;
   flex-grow: 1; /* Added to make contentarea take the remaining space */
   white-space: pre-wrap;
+  
 }

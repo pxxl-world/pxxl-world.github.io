@@ -4,24 +4,42 @@ codeeditor.classList.add('hidden')
 
 const explorer = document.createElement('div')
 explorer.id = 'explorer'
-
+explorer.innerHTML = "<h3>Characters:</h3>"
 
 codeeditor.appendChild(explorer)
-
 const contentarea = document.createElement('div')
 contentarea.id = 'contentarea'
 codeeditor.appendChild(contentarea)
 
+import { Writable } from './store'
+
+let custom_script = new Writable('custom_script', '')
+let last_character = new Writable('last_character', 'peter')
+export let userscript = ''
+
+async function load_script(key:string){
+  let text = '' 
+  if (key === 'custom'){
+    text = custom_script.value
+  }else{
+    text = await fetch(`/userscripts/${key}.js`).then(res => res.text())
+  }
+  contentarea.innerText = text
+  userscript = text
+  last_character.set(key)
+  console.log(userscript);
+  
+}
+
+load_script(last_character.value)
 
 ;(async ()=>{
-  let default_character_list = await fetch('/userscripts/list.json').then(res => res.json())
-  default_character_list.forEach((character:string)=>{
+  let default_character_list = await fetch('/userscripts/list.json').then(res => res.json());
+  default_character_list.concat(custom_script.value? ['custom']:[]) .forEach((character:string)=>{
     const charbutton = document.createElement('p')
     charbutton.innerText = character
-    charbutton.addEventListener('click', e => {
-      fetch(`/userscripts/${character}.js`).then(res => res.text()).then(script => {
-        contentarea.innerText = script
-      })
+    charbutton.addEventListener('click', _ => {
+      load_script(character)
     })
     explorer.appendChild(charbutton)
   })
@@ -32,22 +50,13 @@ codeeditor.appendChild(contentarea)
 
 })()
 
-export let userscript = `
-
-document.addEventListener('keydown', e => {
-  if(e.key === 'ArrowUp') walk(0, -1)
-  if(e.key === 'ArrowDown') walk(0, 1)
-  if(e.key === 'ArrowLeft') walk(-1, 0)
-  if(e.key === 'ArrowRight') walk(1, 0)
-})
-`
 
 contentarea.contentEditable = 'true'
 contentarea.innerHTML = userscript
 
-contentarea.addEventListener('input', e => {
+contentarea.addEventListener('input', _ => {
   userscript = contentarea.innerText
+  custom_script.set(userscript)
   console.log(userscript);
+
 })
-
-

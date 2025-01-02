@@ -1,23 +1,25 @@
 
-// pan script
-
+let green = '#ff4400'
+let tail = []
 
 async function walk(dx, dy){
-
+  
   const startx = state.player.position.x
   const starty = state.player.position.y
   const endx = startx + dx
   const endy = starty + dy
-  action({action: 'move', startx, starty, endx, endy})
+
+  if(state.world[endx][endy] != null) await action({action: 'delete', x:endx, y:endy})
+  if (!await action({action: 'move', startx, starty, endx, endy})) return
+
+  await create(startx,starty, green)
 }
+
 
 async function create (x, y, color){
-  action({action: 'put', x: state.player.position.x+x, y: state.player.position.y+y, color})
+  return await action({action: 'put', x:x, y:y, color})
 }
 
-
-create(1,0,'green')
-create(0,1,'green')
 
 let speed = 1
 
@@ -27,6 +29,3 @@ document.addEventListener('keydown', e => {
   if(e.key === 'ArrowLeft') walk(-speed, 0)
   if(e.key === 'ArrowRight') walk(speed, 0)
 })
-
-
-

@@ -31,24 +31,26 @@ document.addEventListener = (type:string, listener:(e:any)=>{}) => {
   events.get(type)!.push(listener)
 }
 
-eval(userscript)
-
 
 const codebutton = document.querySelector<HTMLButtonElement>('#codebutton')!
 codebutton.onclick = () => {
   showcode = !showcode
   if(!showcode){
     codeeditor.remove()
-    app.appendChild(canvas)
+    app.appendChild(canvas);
+    load_script(userscript)
 
-    eval(userscript)
   } else {
     events.forEach((_, type) => events.set(type, []))
     canvas.remove()
     app.appendChild(codeeditor)
   }
-
 }
+
+addEventListener('keydown', e => {
+  if(e.key === 'Escape') codebutton.click()
+}
+)
 
 const world_size = 100
 const block_size = canvas.width / world_size
@@ -60,26 +62,37 @@ function draw_block(x:number, y:number, color:string){
   ctx.fillRect(x * block_size, y * block_size, block_size, block_size)
 }
 
-function show_world(world:(string|null)[][]){
+
+let player = {position:{x:0, y:0}, energy:0, id:0};
+let world: (string|null)[][] = Array.from({length: world_size}, () => Array.from({length: world_size}, () => 'red'))
+
+const state = {player, world}
+
+
+
+function show_world(){
+  
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-  world.forEach((row, x) => row.forEach((color, y) => {
+  state.world.forEach((row, x) => row.forEach((color, y) => {
     if(color !== null) draw_block(x, y, color)
   }))
 }
 
-
 const socket = io(backend_url)
 socket.on('game_update', (data:{world:(string|null)[][]}) => {
-  console.log(data);
-  show_world(data.world)
+
+  state.world = data.world
+  show_world()
 })
 
-let player = {position:{x:0, y:0}, energy:0, id:0};
+function load_script(script:string){
+  (new Function('state', 'action', script))(state, action, world)
+}
 
 fetch(`${backend_url}/new_player`).then(res => res.json()).then(data => {
-  player = data
-  console.log();
-  
+  player = data;
+  state.player = player
+  load_script(userscript)
 })
 
 type ActionParams = {
@@ -99,23 +112,23 @@ type ActionParams = {
   y: number
 }
 
+
+// @ts-ignore
 async function action(params:ActionParams){
-  player = await fetch(`${backend_url}/action`, {
+
+  let resp = await fetch(`${backend_url}/action`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({id: player.id, ...params})
-  }).then(res => res.json())
+  })
+  if(resp.status === 200){
+    state.player = await resp.json()
+    return true
+  }
+  else{
+    console.error(await resp.text());
+    return false
+  }
 }
 
-
-// @ts-ignore
-async function walk(dx:number, dy:number){
-  console.log('walk', dx,dy);
-  
-  const startx = player.position.x
-  const starty = player.position.y
-  const endx = startx + dx
-  const endy = starty + dy
-  action({action: 'move', startx, starty, endx, endy})
-}
 

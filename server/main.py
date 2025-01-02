@@ -36,8 +36,11 @@ def action():
     player_id = request.json['id']
     if player_id not in players: return 'Player not found', 404
     player = players[player_id]
-    msg, code = player.action(request.json)
-    if code == 200: socketio.emit('game_update', world_state())
+    try:
+      msg, code = player.action(request.json)
+      if code == 200: socketio.emit('game_update', world_state())
+    except Exception as e:
+      msg, code = str(e), 400
     return msg, code
 
 @socketio.on('connect')
