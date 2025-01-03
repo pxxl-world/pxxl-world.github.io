@@ -6,14 +6,14 @@ let tail = []
 
 async function walk(dx, dy){
 
-  const startx = state.player.position.x
-  const starty = state.player.position.y
-  const endx = startx + dx
-  const endy = starty + dy
-  if (!await action({action: 'move', startx, starty, endx, endy})){
+  const x = state.player.position.x
+  const y = state.player.position.y
+  const endx = x + dx
+  const endy = y + dy
+  if (!await action({action: 'move', x, y, endx, endy})){
     return
   }
-  await create(startx,starty, green)
+  await create(x,y, green)
 }
 
 async function create (x, y, color){

@@ -4,15 +4,15 @@ let tail = []
 
 async function walk(dx, dy){
   
-  const startx = state.player.position.x
-  const starty = state.player.position.y
-  const endx = startx + dx
-  const endy = starty + dy
+  const x = state.player.position.x
+  const y = state.player.position.y
+  const endx = x + dx
+  const endy = y + dy
 
   if(state.world[endx][endy] != null) await action({action: 'delete', x:endx, y:endy})
-  if (!await action({action: 'move', startx, starty, endx, endy})) return
+  if (!await action({action: 'move', x, y, endx, endy})) return
 
-  await create(startx,starty, green)
+  await create(x, y, green)
 }
 
 

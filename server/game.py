@@ -50,7 +50,8 @@ class Block:
 class Player:
   def __init__(self):
     cleanup()
-    self.id = str(abs(hash((len(players), secret))))
+    # self.id = str(abs(hash((len(players), secret))))
+    self.id = str(abs(hash(random.randint(0, 1e10))))
     position = Position(random.randint(0, world_size), random.randint(0, world_size))
     while position.get() is not None: position = Position(random.randint(0, world_size), random.randint(0, world_size))
     self.body = Block(position, Color.red())
@@ -71,31 +72,34 @@ class Player:
       'energy': self.energy
     }
   
+
   def action(self, payload):
-    print('action', payload)
+    print(f'action {payload}')
+    if self.body.position.get() is not self.body: return 'Player is dead', 400
     actiontype = payload['action']
-    cost = {'put': 10, 'move': 1, 'delete': 5}.get(actiontype, 0)
+    pos = self.body.position
+    x, y = payload['x'], payload['y']
+    if not check_pos(x, y): return 'Invalid position', 400
+    dist = abs(pos.x - x) + abs(pos.y - y)
+    if actiontype == 'move': dist += abs(x - payload['endx']) + abs(y - payload['endy'])
+    cost = {'put': 15, 'move': 0, 'delete': -10}[actiontype] + dist ** 2 // 4 + 1
     if self.get_energy() < cost: return 'Not enough energy', 400
     self.energy -= cost
-    if actiontype == 'put':
-      x, y = payload['x'], payload['y']
-      if x<0 or x>=world_size or y<0 or y>=world_size: return 'Invalid position', 400
-      color = payload['color']
-      block = Block(Position(x, y), Color.fromhex(color))
-    elif actiontype == 'move':
-      startx, starty = payload['startx'], payload['starty']
-      endx, endy = payload['endx'], payload['endy']
-      if endx<0 or endx>=world_size or endy<0 or endy>=world_size: return 'Invalid position', 400
-      if world[startx][starty] is None: return 'No block at starting position', 400
-      if world[endx][endy] is not None: return 'Block already at ending position', 400
-      world[startx][starty].move(endx, endy)
+
+    if actiontype == 'put': block = Block(Position(x, y), Color.fromhex(payload['color']))
     elif actiontype == 'delete':
-      x, y = payload['x'], payload['y']
-      if x<0 or x>=world_size or y<0 or y>=world_size: return 'Invalid position', 400
       if world[x][y] is None: return 'No block at position', 400
       world[x][y].delete()
+    elif actiontype == 'move':
+      endx, endy = payload['endx'], payload['endy']
+      if not check_pos(endx, endy): return 'Invalid position end position', 400
+      if world[endx][endy] is not None: return 'Block already at ending position', 400
+      if not self.body.move(endx, endy): return 'Invalid move', 400
     else: raise ValueError(f'Invalid action type "{actiontype}"')
-    return self.info(), 200
+    return self.info(), 200  
+
+
+def check_pos(x,y): return 0 <= x < world_size and 0 <= y < world_size
 
 def cleanup():
   for pid in list(players.keys()):

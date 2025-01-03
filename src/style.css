@@ -65,6 +65,10 @@ canvas{
   padding: 10px;
 }
 
+#explorer>p{
+  cursor: pointer;
+}
+
 #codeeditor>#contentarea {
   /* display: flex; */
   flex-direction: column;
