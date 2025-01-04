@@ -1,8 +1,8 @@
 import io from 'socket.io-client'
 
+const backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"http://167.71.43.73:5000"
 
-const host = window.location.hostname
-const backend_url = `http://${host}:5000`
+
 console.log(backend_url);
 
 const app = document.querySelector<HTMLDivElement>('#app')!
