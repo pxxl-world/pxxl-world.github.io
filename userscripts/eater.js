@@ -15,17 +15,28 @@ async function walk(dx, dy){
   await create(x, y, green)
 }
 
-
 async function create (x, y, color){
   return await action({action: 'put', x:x, y:y, color})
 }
 
-
 let speed = 1
 
+
+let direction = [0,speed]
+
+
+setInterval(() => {
+  if (direction[0] === 0 && direction[1] === 0) return
+  walk(...direction)
+}, 100);
+
+
 document.addEventListener('keydown', e => {
-  if(e.key === 'ArrowUp') walk(0, -speed)
-  if(e.key === 'ArrowDown') walk(0, speed)
-  if(e.key === 'ArrowLeft') walk(-speed, 0)
-  if(e.key === 'ArrowRight') walk(speed, 0)
+  if (e.key === 'ArrowUp') direction = [0, -speed]
+  else if (e.key === 'ArrowDown') direction = [0, speed]
+  else if (e.key === 'ArrowLeft') direction = [-speed, 0]
+  else if (e.key === 'ArrowRight') direction = [speed, 0]
+})
+document.addEventListener('keyup', e => {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) direction = [0,0]
 })
