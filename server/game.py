@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 world_size = 100
 
-secret = random.randint(0, 1e10)
+# secret = random.randint(0, (1e10))
 world = [[None for i in range(world_size)] for j in range(world_size)]
 
 @dataclass
