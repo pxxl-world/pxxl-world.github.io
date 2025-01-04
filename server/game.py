@@ -51,7 +51,7 @@ class Player:
   def __init__(self):
     cleanup()
     # self.id = str(abs(hash((len(players), secret))))
-    self.id = str(abs(hash(random.randint(0, 1e10))))
+    self.id = str(abs(hash(random.randint(0, int(1e10)))))
     position = Position(random.randint(0, world_size), random.randint(0, world_size))
     while position.get() is not None: position = Position(random.randint(0, world_size), random.randint(0, world_size))
     self.body = Block(position, Color.red())
