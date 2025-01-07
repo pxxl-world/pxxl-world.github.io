@@ -48,7 +48,11 @@ def redeploy():
   with lock:
     print('redeploying')
     import os
-    os.system('git pull')
+    os.system('git pull --rebase')
+    # kill the server
+    os.system('pkill -f "python main.py"')
+    # restart the server
+    os.system('python main.py')
 
 @socketio.on('connect')
 def handle_connect():
