@@ -71,7 +71,6 @@ class Player:
       'position': self.body.position,
       'energy': self.energy
     }
-  
 
   def action(self, payload):
     print(f'action {payload}')

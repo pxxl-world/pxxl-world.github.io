@@ -50,10 +50,15 @@ def redeploy():
     import os
     os.system('git pull --rebase')
 
+@app.route('/hello', methods=['GET'])
+def hello(): return 'Hello, World!', 200
+
 @socketio.on('connect')
 def handle_connect():
   print('Client connected')
   socketio.emit('game_update', world_state())
+
+
 
 @socketio.on('disconnect')
 def handle_disconnect():
