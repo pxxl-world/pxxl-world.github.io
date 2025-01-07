@@ -53,7 +53,7 @@ class Player:
     if position is None:
       position = Position(random.randint(0, world_size), random.randint(0, world_size))
       while position.get() is not None: position = Position(random.randint(0, world_size), random.randint(0, world_size))
-    self.body = Block(position, Color.red())
+    self.body = Block(position, color)
     self.energy = energy
     self.last_update = time.time()
     players[self.id] = self
@@ -96,8 +96,10 @@ class Player:
       if not self.body.move(endx, endy): return 'Invalid move', 400
     elif actiontype == 'spawn':
       if world[x][y] is not None: return 'Block already at position', 400
-      spawn = Player(NPC=True, position=Position(x, y), color=Color.fromhex(payload['color']))
+      spawn = Player(NPC=True, position=Position(x, y), color=Color.fromhex(payload['color']), energy= self.energy)
+      self.energy = 0
       return spawn.info(), 200
+      
     else: raise ValueError(f'Invalid action type "{actiontype}"')
     return self.info(), 200  
 

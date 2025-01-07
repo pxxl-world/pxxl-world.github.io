@@ -134,21 +134,14 @@ type ActionParams = {
 
 // @ts-ignore
 async function action(params:ActionParams, player = state.player){
-
-  let resp = await fetch(`${backend_url}/action`, {
+  return await fetch(`${backend_url}/action`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({id: player.id, ...params})
-  })
-  if(resp.status === 200){
+  }).then(async resp=>{
+    if (resp.status !== 200) return null
     const res = await resp.json() as Player
     if (res.id == state.player.id) state.player = res
     return res
-  }
-  else{
-    console.error(await resp.text());
-    return false
-  }
+  })
 }
-
-
