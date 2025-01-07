@@ -1,9 +1,22 @@
 import io from 'socket.io-client'
 
-const backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"http://167.71.43.73:5000"
-
+let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
 
 console.log(backend_url);
+
+
+
+if (window.location.hostname === 'localhost') {
+  const switch_button= document.createElement('button')
+  switch_button.innerText = 'switch to production'
+  switch_button.onclick = () => {
+    
+    backend_url = 'https://zmanifold.com'
+    console.log(backend_url);
+  }
+  document.body.appendChild(switch_button)
+}
+
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 

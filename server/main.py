@@ -52,5 +52,15 @@ def handle_connect():
 def handle_disconnect():
   print('Client disconnected')  
 
+
+import os, sys
+
 if __name__ == '__main__':
-  socketio.run(app, debug=True, port=5000, host= '0.0.0.0')
+  if len(sys.argv) > 1:
+    if ('--dev' in sys.argv):
+      socketio.run(app, debug=True, port=5000, host= '0.0.0.0')
+    else:
+      socketio.run(app, host="0.0.0.0", port=443, ssl_context=(
+        "/etc/letsencrypt/live/zmanifold.com/fullchain.pem",
+        "/etc/letsencrypt/live/zmanifold.com/privkey.pem"
+      ))
