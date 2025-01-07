@@ -54,8 +54,6 @@ def redeploy():
 @app.route('/hello', methods=['GET'])
 def hello(): return 'Hello, World!', 200
 
-    return "ok"
-
 @socketio.on('connect')
 def handle_connect():
   print('Client connected')
