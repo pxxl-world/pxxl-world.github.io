@@ -54,6 +54,9 @@ def redeploy():
 @app.route('/hello', methods=['GET'])
 def hello(): return {"status": "ok"}, 200
 
+@app.route('/')
+def index(): return app.send_static_file('index.html')
+
 @socketio.on('connect')
 def handle_connect():
   print('Client connected')
