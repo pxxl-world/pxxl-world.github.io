@@ -25,10 +25,19 @@ async function eat (x, y){
   return await action({action: 'delete', x:x, y:y})
 }
 
-async function spawn(x,y){
-  return await action({action: 'spawn', x, y, color: '#ffffff'})
-}
+async function shoot(x,y){
+  action({action: 'spawn', x, y, color: '#ffffff'}).then(fly)
 
+  function fly (bullet){
+    if (!bullet) return
+    console.log(bullet.energy);
+    
+    action(
+      {action: 'move', ...bullet.position, endx: bullet.position.x, endy: bullet.position.y+1}, bullet
+
+    ).then(fly)
+  }
+}
 
 
 document.addEventListener('keydown', e => {
@@ -45,5 +54,5 @@ document.addEventListener('keydown', e => {
 
 document.addEventListener('keyup', e => {
   if (e.key.startsWith("Arrow")) direction = [0,0]
-  if (e.key === ' ') spawn(state.player.position.x, state.player.position.y+1)
+  if (e.key === ' ') shoot(state.player.position.x, state.player.position.y+1)
 })
