@@ -50,6 +50,8 @@ def redeploy():
     import os
     os.system('git pull --rebase')
 
+    return "ok"
+
 @socketio.on('connect')
 def handle_connect():
   print('Client connected')
