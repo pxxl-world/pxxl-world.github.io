@@ -14,7 +14,7 @@ codeeditor.appendChild(contentarea)
 import { Writable } from './store'
 
 let custom_script = new Writable('custom_script', '')
-let last_character = new Writable('last_character', 'peter')
+let last_character = new Writable('last_character', 'snake')
 export let userscript = ''
 
 async function load_script(key:string){

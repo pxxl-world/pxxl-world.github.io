@@ -43,6 +43,13 @@ def action():
       msg, code = str(e), 400
     return msg, code
 
+@app.route('/redeploy', methods=['POST'])
+def redeploy():
+  with lock:
+    print('redeploying')
+    import os
+    os.system('git pull')
+
 @socketio.on('connect')
 def handle_connect():
   print('Client connected')
@@ -50,8 +57,7 @@ def handle_connect():
 
 @socketio.on('disconnect')
 def handle_disconnect():
-  print('Client disconnected')  
-
+  print('Client disconnected')
 
 import os, sys
 
