@@ -13,7 +13,7 @@ class Position:
   def get(self): return world[self.x][self.y]
 
 
-@dataclass
+@dataclass(frozen=True)
 class Color:
   r: int
   g: int
@@ -46,23 +46,24 @@ class Block:
   
   def delete(self): world[self.position.x][self.position.y] = None
 
-
 class Player:
-  def __init__(self):
+  def __init__(self, NPC=False, energy = 100, position=None, color=Color.red()):
     cleanup()
-    # self.id = str(abs(hash((len(players), secret))))
     self.id = str(abs(hash(random.randint(0, int(1e10)))))
-    position = Position(random.randint(0, world_size), random.randint(0, world_size))
-    while position.get() is not None: position = Position(random.randint(0, world_size), random.randint(0, world_size))
+    if position is None:
+      position = Position(random.randint(0, world_size), random.randint(0, world_size))
+      while position.get() is not None: position = Position(random.randint(0, world_size), random.randint(0, world_size))
     self.body = Block(position, Color.red())
-    self.energy = 100
+    self.energy = energy
     self.last_update = time.time()
     players[self.id] = self
+    self.NPC = NPC
 
   def get_energy(self):
-    self.energy += (time.time() - self.last_update) * 100
+    if not self.NPC:
+      self.energy += (time.time() - self.last_update) * 100
+      if self.energy > 100: self.energy = 100
     self.last_update = time.time()
-    if self.energy > 100: self.energy = 100
     return self.energy
   
   def info(self):
@@ -81,10 +82,9 @@ class Player:
     if not check_pos(x, y): return 'Invalid position', 400
     dist = abs(pos.x - x) + abs(pos.y - y)
     if actiontype == 'move': dist += abs(x - payload['endx']) + abs(y - payload['endy'])
-    cost = {'put': 15, 'move': 0, 'delete': -10}[actiontype] + dist ** 2 // 4 + 1
+    cost = {'put': 15, 'move': 0, 'delete': -10, 'spawn': 15,}[actiontype] + dist ** 2 // 4 + 1
     if self.get_energy() < cost: return 'Not enough energy', 400
     self.energy -= cost
-
     if actiontype == 'put': block = Block(Position(x, y), Color.fromhex(payload['color']))
     elif actiontype == 'delete':
       if world[x][y] is None: return 'No block at position', 400
@@ -94,6 +94,10 @@ class Player:
       if not check_pos(endx, endy): return 'Invalid position end position', 400
       if world[endx][endy] is not None: return 'Block already at ending position', 400
       if not self.body.move(endx, endy): return 'Invalid move', 400
+    elif actiontype == 'spawn':
+      if world[x][y] is not None: return 'Block already at position', 400
+      spawn = Player(NPC=True, position=Position(x, y), color=Color.fromhex(payload['color']))
+      return spawn.info(), 200
     else: raise ValueError(f'Invalid action type "{actiontype}"')
     return self.info(), 200  
 

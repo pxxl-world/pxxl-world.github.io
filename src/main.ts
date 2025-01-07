@@ -76,7 +76,13 @@ function draw_block(x:number, y:number, color:string){
 }
 
 
-let player = {position:{x:0, y:0}, energy:0, id:0};
+type Player = {
+  position: {x:number, y:number},
+  energy: number,
+  id: number
+}
+
+let player:Player = {position:{x:0, y:0}, energy:0, id:0};
 let world: (string|null)[][] = Array.from({length: world_size}, () => Array.from({length: world_size}, () => 'red'))
 
 const state = {player, world}
@@ -127,7 +133,7 @@ type ActionParams = {
 
 
 // @ts-ignore
-async function action(params:ActionParams){
+async function action(params:ActionParams, player = state.player){
 
   let resp = await fetch(`${backend_url}/action`, {
     method: 'POST',
@@ -135,8 +141,9 @@ async function action(params:ActionParams){
     body: JSON.stringify({id: player.id, ...params})
   })
   if(resp.status === 200){
-    state.player = await resp.json()
-    return true
+    const res = await resp.json() as Player
+    if (res.id == state.player.id) state.player = res
+    return res
   }
   else{
     console.error(await resp.text());
