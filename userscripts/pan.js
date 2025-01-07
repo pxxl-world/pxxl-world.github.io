@@ -1,34 +1,49 @@
 
-// pan script
+let color = '#ff4400'
+let tail = []
 
+let direction = [1,0]
+let speed = 2
+let lock = false
 
-async function walk(dx, dy){
-
+async function walk(){
+  if (lock) return
+  lock = true
   const x = state.player.position.x
   const y = state.player.position.y
-  const endx = startx + dx
-  const endy = starty + dy
-  if (!await action({action: 'move', x, y, endx, endy})){
-    return
-  }
+  const endx = x + direction[0] * speed
+  const endy = y + direction[1] * speed
+  await action({action: 'move', x, y, endx, endy})
+  lock = false
 }
 
 async function create (x, y, color){
-  action({action: 'put', x: state.player.position.x+x, y: state.player.position.y+y, color})
+  return await action({action: 'put', x:x, y:y, color})
+}
+
+async function eat (x, y){
+  return await action({action: 'delete', x:x, y:y})
+}
+
+async function spawn(x,y){
+  return await action({action: 'spawn', x, y, color: '#ffffff'})
 }
 
 
-create(1,0,'green')
-create(0,1,'green')
-
-let speed = 1
 
 document.addEventListener('keydown', e => {
-  if(e.key === 'ArrowUp') walk(0, -speed)
-  if(e.key === 'ArrowDown') walk(0, speed)
-  if(e.key === 'ArrowLeft') walk(-speed, 0)
-  if(e.key === 'ArrowRight') walk(speed, 0)
+  if (e.key.startsWith("Arrow")){
+    e.preventDefault()
+    if (e.key === 'ArrowUp') direction = [0, -1]
+    else if (e.key === 'ArrowDown') direction = [0, 1]
+    else if (e.key === 'ArrowLeft') direction = [-1, 0]
+    else if (e.key === 'ArrowRight') direction = [1, 0]
+    walk()
+  }
 })
 
 
-
+document.addEventListener('keyup', e => {
+  if (e.key.startsWith("Arrow")) direction = [0,0]
+  if (e.key === ' ') spawn(state.player.position.x, state.player.position.y+1)
+})
