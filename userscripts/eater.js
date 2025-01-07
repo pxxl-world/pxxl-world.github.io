@@ -24,11 +24,14 @@ async function create (x, y, color){
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowUp') direction = [0, -1]
-  else if (e.key === 'ArrowDown') direction = [0, 1]
-  else if (e.key === 'ArrowLeft') direction = [-1, 0]
-  else if (e.key === 'ArrowRight') direction = [1, 0]
-  walk()
+  if (e.key.startsWith("Arrow")){
+    e.preventDefault()
+    if (e.key === 'ArrowUp') direction = [0, -1]
+    else if (e.key === 'ArrowDown') direction = [0, 1]
+    else if (e.key === 'ArrowLeft') direction = [-1, 0]
+    else if (e.key === 'ArrowRight') direction = [1, 0]
+    walk()
+  }
 })
 
 document.addEventListener('keyup', e => {
