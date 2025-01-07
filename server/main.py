@@ -49,10 +49,6 @@ def redeploy():
     print('redeploying')
     import os
     os.system('git pull --rebase')
-    # kill the server
-    # os.system('pkill -f "python main.py"')
-    # restart the server
-    # os.system('python main.py')
 
 @socketio.on('connect')
 def handle_connect():
@@ -69,7 +65,7 @@ if __name__ == '__main__':
     if ('--dev' in sys.argv):
       socketio.run(app, debug=True, port=5000, host= '0.0.0.0')
     else:
-      socketio.run(app, host="0.0.0.0", port=443, ssl_context=(
+      socketio.run(app, debug=True, host="0.0.0.0", port=443, ssl_context=(
         "/etc/letsencrypt/live/zmanifold.com/fullchain.pem",
         "/etc/letsencrypt/live/zmanifold.com/privkey.pem"
       ))
