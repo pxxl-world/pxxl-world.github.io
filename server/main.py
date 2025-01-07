@@ -66,7 +66,6 @@ def handle_disconnect():
 import os, sys
 
 if __name__ == '__main__':
-  if len(sys.argv) > 1:
     if ('--dev' in sys.argv):
       socketio.run(app, debug=True, port=5000, host= '0.0.0.0')
     else:
