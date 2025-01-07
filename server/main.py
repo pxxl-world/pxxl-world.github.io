@@ -52,7 +52,7 @@ def redeploy():
     return "ok"
 
 @app.route('/hello', methods=['GET'])
-def hello(): return 'Hello, World!', 200
+def hello(): return {"status": "ok"}, 200
 
 @socketio.on('connect')
 def handle_connect():
