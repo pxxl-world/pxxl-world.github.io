@@ -126,7 +126,10 @@ async function action(params:ActionParams, actor = player.value){
     body: JSON.stringify({id: actor.id, ...params})
   }).then(async resp=>{
     if (resp.status !== 200) {
-      console.log(await resp.text())
+      resp.text().then(text=>{
+        console.log(text)
+        if (text === 'Player not found') reload_player()
+      })
       return null
     }
     const res = await resp.json() as typeof player.value
