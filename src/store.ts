@@ -19,3 +19,8 @@ export class Writable<T>{
     this.subscribers.add(subscriber)
   }
 }
+
+export let custom_script = new Writable('custom_script', '')
+export let last_character = new Writable('last_character', 'snake')
+export let active_script = new Writable('active_script', custom_script.value)
+export let player = new Writable('player', {position:{x:0, y:0}, energy:0, id:0})

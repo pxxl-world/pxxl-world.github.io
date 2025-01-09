@@ -1,21 +1,26 @@
-export const codeeditor = document.createElement('div')
+const codeeditor = document.createElement('div')
 codeeditor.id = 'codeeditor'
-codeeditor.classList.add('hidden')
+document.body.appendChild(codeeditor)
 
 const explorer = document.createElement('div')
 explorer.id = 'explorer'
-explorer.innerHTML = "<h3>Characters:</h3>"
+explorer.innerHTML += "<h3>Characters:</h3>"
 
 codeeditor.appendChild(explorer)
 const contentarea = document.createElement('div')
 contentarea.id = 'contentarea'
 codeeditor.appendChild(contentarea)
 
-import { Writable } from './store'
 
-let custom_script = new Writable('custom_script', '')
-let last_character = new Writable('last_character', 'snake')
-export let userscript = ''
+const exitbutton = document.createElement('button')
+exitbutton.innerText = 'play'
+document.body.appendChild(exitbutton)
+exitbutton.onclick = () => {
+  window.location.href = '/'
+}
+document.addEventListener('keyup', e => {if(e.key === 'Escape') exitbutton.click()})
+  
+import {custom_script, last_character, active_script} from './store'
 
 async function load_script(key:string){
   let text = '' 
@@ -25,10 +30,9 @@ async function load_script(key:string){
     text = await fetch(`/userscripts/${key}.js`).then(res => res.text())
   }
   contentarea.innerText = text
-  userscript = text
+  active_script.set(text)
   last_character.set(key)
-  console.log(userscript);
-  
+  console.log(active_script.value);
 }
 
 load_script(last_character.value)
@@ -44,19 +48,13 @@ load_script(last_character.value)
     explorer.appendChild(charbutton)
   })
 
-  // @ts-ignore
-  let custom_character_list = JSON.parse(localStorage.getItem('custom_character_list') || '[]')
-  console.log(codeeditor);
-
 })()
 
-
 contentarea.contentEditable = 'true'
-contentarea.innerHTML = userscript
+contentarea.innerHTML = active_script.value
 
 contentarea.addEventListener('input', _ => {
-  userscript = contentarea.innerText
-  custom_script.set(userscript)
-  console.log(userscript);
-
+  active_script.set(contentarea.innerText)
+  custom_script.set(contentarea.innerText)
+  console.log(active_script.value);
 })
