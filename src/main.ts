@@ -98,9 +98,7 @@ async function reload_player(){
 reloadbutton.onclick = reload_player
 
 load_script(active_script.value);
-if (player.value.id === 0) await reload_player()
-
-console.log(player.value);
+if (player.value.id === 0) reload_player()
 
 
 type ActionParams = {
