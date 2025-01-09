@@ -82,7 +82,7 @@ class Player:
     if not check_pos(x, y): return 'Invalid position', 400
     dist = abs(pos.x - x) + abs(pos.y - y)
     if actiontype == 'move': dist += abs(x - payload['endx']) + abs(y - payload['endy'])
-    cost = {'put': 15, 'move': 0, 'delete': -10, 'spawn': 15,}[actiontype] + dist ** 2 // 4 + 1
+    cost = {'put': 15, 'move': 0, 'delete': -15, 'spawn': 15,}[actiontype] + dist ** 2
     if self.get_energy() < cost: return 'Not enough energy', 400
     self.energy -= cost
     if actiontype == 'put': block = Block(Position(x, y), Color.fromhex(payload['color']))

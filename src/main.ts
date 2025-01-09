@@ -5,20 +5,12 @@ let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5
 console.log(backend_url);
 
 
-
-if (window.location.hostname === 'localhost') {
-  const switch_button= document.createElement('button')
-  switch_button.innerText = 'switch to production'
-  switch_button.onclick = () => {
-    
-    backend_url = 'https://zmanifold.com'
-    console.log(backend_url);
-  }
-  document.body.appendChild(switch_button)
-}
-
-
 const app = document.querySelector<HTMLDivElement>('#app')!
+
+const codebutton = document.createElement('button')
+codebutton.innerText = 'Show Code'
+app.appendChild(codebutton)
+
 
 
 const canvas = document.createElement('canvas')
@@ -45,7 +37,7 @@ document.addEventListener = (type:string, listener:(e:any)=>{}) => {
 }
 
 
-const codebutton = document.querySelector<HTMLButtonElement>('#codebutton')!
+
 codebutton.onclick = () => {
   showcode = !showcode
   if(!showcode){
@@ -87,13 +79,23 @@ let world: (string|null)[][] = Array.from({length: world_size}, () => Array.from
 
 const state = {player, world}
 
-
+// function energy_color(energy:number){
+//   if (energy < 0) throw new Error('energy should be positive')
+//   if (energy > 100) throw new Error('energy should be less than 100')
+//   // color between red and white depending on energy
+//   return 
+// }
 
 function show_world(){
-  
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   state.world.forEach((row, x) => row.forEach((color, y) => {
-    if(color !== null) draw_block(x, y, color)
+    if(color !== null){
+      if (state.player.position.x === x && state.player.position.y === y){
+        draw_block(x, y, 'white')
+      }else{
+        draw_block(x, y, color)
+      }
+    }
   }))
 }
 

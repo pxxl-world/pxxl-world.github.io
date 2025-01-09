@@ -3,18 +3,17 @@ let color = '#ff4400'
 let tail = []
 
 let direction = [1,0]
-let speed = 2
-let lock = false
+let speed = 1
+let lock = true
+
 
 async function walk(){
   if (lock) return
-  lock = true
   const x = state.player.position.x
   const y = state.player.position.y
   const endx = x + direction[0] * speed
   const endy = y + direction[1] * speed
   await action({action: 'move', x, y, endx, endy})
-  lock = false
 }
 
 async function create (x, y, color){
@@ -25,34 +24,42 @@ async function eat (x, y){
   return await action({action: 'delete', x:x, y:y})
 }
 
-async function shoot(x,y){
-  action({action: 'spawn', x, y, color: '#ffffff'}).then(fly)
-
-  function fly (bullet){
+async function shoot(x,y,dx,dy){
+  let bullet = await action({action: 'spawn', x, y, color: '#ffffff'})
+  async function fly (bullet){
     if (!bullet) return
-    console.log(bullet.energy);
-    
-    action(
-      {action: 'move', ...bullet.position, endx: bullet.position.x, endy: bullet.position.y+1}, bullet
-
-    ).then(fly)
+    let nx = bullet.position.x+dx
+    let ny = bullet.position.y+dy
+    if (state.world[nx][ny] != null){
+      await action({action: 'delete', x: nx, y: ny}, bullet)
+    }
+    bullet = await action({action: 'move', ...bullet.position, endx: nx, endy: ny}, bullet)
+    fly(bullet)
   }
+  fly(bullet)
 }
+
+setInterval(() => {
+  walk()
+}, 100);
 
 
 document.addEventListener('keydown', e => {
   if (e.key.startsWith("Arrow")){
+    lock = false
     e.preventDefault()
     if (e.key === 'ArrowUp') direction = [0, -1]
     else if (e.key === 'ArrowDown') direction = [0, 1]
     else if (e.key === 'ArrowLeft') direction = [-1, 0]
     else if (e.key === 'ArrowRight') direction = [1, 0]
-    walk()
   }
 })
 
 
 document.addEventListener('keyup', e => {
-  if (e.key.startsWith("Arrow")) direction = [0,0]
-  if (e.key === ' ') shoot(state.player.position.x, state.player.position.y+1)
+  if (e.key.startsWith("Arrow")) lock = true
+  if (e.key === ' ') {
+    let [dx,dy] = direction
+    shoot(state.player.position.x+dx, state.player.position.y+dy, dx, dy)
+  }
 })
