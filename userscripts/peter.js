@@ -2,6 +2,7 @@
 // peter script
 
 async function walk(dx, dy){
+  console.log(state.player)
 
   const x = state.player.position.x
   const y = state.player.position.y
@@ -28,6 +29,8 @@ create(0,-1,green)
 let speed = 2
 
 document.addEventListener('keydown', e => {
+  console.log(e.key);
+  
   if(e.key === 'ArrowUp') walk(0, -speed)
   if(e.key === 'ArrowDown') walk(0, speed)
   if(e.key === 'ArrowLeft') walk(-speed, 0)
