@@ -57,6 +57,9 @@ def hello(): return {"status": "ok"}, 200
 @app.route('/')
 def index(): return app.send_static_file('index.html')
 
+@app.route('/<path:path>')
+def catch_all(path): return app.send_static_file(path)
+
 @socketio.on('connect')
 def handle_connect():
   print('Client connected')
