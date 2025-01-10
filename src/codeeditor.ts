@@ -1,3 +1,6 @@
+// import {custom_script, last_character, active_script} from './store'
+import { load_script, active_character, custom_script, active_script } from './scripting'
+
 const codeeditor = document.createElement('div')
 codeeditor.id = 'codeeditor'
 document.body.appendChild(codeeditor)
@@ -19,23 +22,6 @@ exitbutton.onclick = () => {
   window.location.href = '/'
 }
 document.addEventListener('keyup', e => {if(e.key === 'Escape') exitbutton.click()})
-  
-import {custom_script, last_character, active_script} from './store'
-
-async function load_script(key:string){
-  let text = '' 
-  if (key === 'custom'){
-    text = custom_script.value
-  }else{
-    text = await fetch(`/userscripts/${key}.js`).then(res => res.text())
-  }
-  contentarea.innerText = text
-  active_script.set(text)
-  last_character.set(key)
-  console.log(active_script.value);
-}
-
-load_script(last_character.value)
 
 ;(async ()=>{
   let default_character_list = await fetch('/userscripts/list.json').then(res => res.json());
@@ -43,7 +29,19 @@ load_script(last_character.value)
     const charbutton = document.createElement('p')
     charbutton.innerText = character
     charbutton.addEventListener('click', _ => {
-      load_script(character)
+      active_character.set(character)
+      load_script(character).then(script => {
+        contentarea.innerText = script
+        active_script.set(script)
+        active_character.set(character)
+      })
+    })
+    active_character.subscribe(newchar => {
+      if (newchar === character){
+        charbutton.classList.add('active')
+      }else{
+        charbutton.classList.remove('active')
+      }
     })
     explorer.appendChild(charbutton)
   })
@@ -56,5 +54,7 @@ contentarea.innerHTML = active_script.value
 contentarea.addEventListener('input', _ => {
   active_script.set(contentarea.innerText)
   custom_script.set(contentarea.innerText)
+  active_character.set('custom')
   console.log(active_script.value);
 })
+

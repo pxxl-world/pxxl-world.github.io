@@ -15,7 +15,8 @@ async function walk(){
   const endy = y + direction[1] * speed
 
   if(state.world[endx][endy] != null) await action({action: 'delete', x:endx, y:endy})
-  if (await action({action: 'move', x, y, endx, endy})) create(x, y, color)
+  await action({action: 'move', x, y, endx, endy})
+  create(x, y, color)
   lock = false
 }
 

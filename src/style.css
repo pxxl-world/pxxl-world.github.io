@@ -85,3 +85,7 @@ canvas{
   top:-2em;
   padding-bottom: 100vh;
 }
+
+.active {
+  background-color: #444;
+}

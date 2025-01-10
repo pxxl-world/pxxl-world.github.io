@@ -4,6 +4,12 @@ from flask_cors import CORS
 import threading
 import json
 
+
+from game import Player, players, world, gameloop
+import hmac
+
+
+
 env = json.load(open('../.env.json'))
 
 app = Flask(__name__, static_folder='../dist', static_url_path='/')
@@ -11,13 +17,8 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 counter = 0
-
-from game import Player, players, world
-
 lock = threading.Lock()
-def world_state(): return {'world': [[block.color.tohex() if block is not None else None for block in row] for row in world],}
 
-import hmac
 
 @app.route('/redeploy', methods=['POST'])
 def redeploy():
@@ -44,7 +45,7 @@ def code():
 @socketio.on('connect')
 def handle_connect():
   print(f'new client {request.sid}')
-  socketio.emit('game_update', world_state())
+  # socketio.emit('game_update', world_state())
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -58,24 +59,36 @@ def handle_new_player():
   
 @socketio.on('action')
 def handle_action(payload):
+  sid = request.sid
+  action_id = payload['action_id']
+  params = payload['params']
+  pid = payload['id']
   with lock:
     print(f'action {payload}')
     try: player = players[payload['id']]
     except: return 'Player not found', 400
     try:
-      msg, code = player.action(payload)
-      if code == 200: socketio.emit('game_update', world_state())
+      def callback(res):
+        socketio.emit('action_response', {
+          'action_id': action_id,
+          'res': res
+        }, to = sid)
+      player.enqueue(params, callback)
     except Exception as e:
-      msg, code = str(e), 400
-    return msg, code
+      print(e)
+      return str(e), 400
+    return 'ok', 200
 
 import os, sys
 
 if __name__ == '__main__':
-    if ('--dev' in sys.argv):
-      socketio.run(app, debug=True, port=5000, host= '0.0.0.0')
-    else:
-      socketio.run(app, debug=True, host="0.0.0.0", port=443, ssl_context=(
-        "/etc/letsencrypt/live/zmanifold.com/fullchain.pem",
-        "/etc/letsencrypt/live/zmanifold.com/privkey.pem"
-      ))
+
+  threading.Thread(target=gameloop, args=(socketio, lock)).start()
+
+  if ('--dev' in sys.argv):
+    socketio.run(app, debug=True, port=5000, host= '0.0.0.0')
+  else:
+    socketio.run(app, debug=True, host="0.0.0.0", port=443, ssl_context=(
+      "/etc/letsencrypt/live/zmanifold.com/fullchain.pem",
+      "/etc/letsencrypt/live/zmanifold.com/privkey.pem"
+    ))

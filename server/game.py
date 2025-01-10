@@ -1,5 +1,28 @@
 import random, time
 from dataclasses import dataclass
+import flask_socketio
+from typing import Callable
+
+import threading
+
+
+def world_state(): return {'world': [[block.color.tohex() if block is not None else None for block in row] for row in world],}
+
+
+def gameloop(socketio:flask_socketio.SocketIO,lock: threading.Lock, ):
+  while True:
+    # print("loop")
+    lock.acquire()
+    cleanup()
+    for player in list(players.values()):
+      if len(player.action_queue) == 0: continue
+      action, callback = player.action_queue.pop(0)
+      res = player.action(action)
+      if callback is not None: callback(res)
+    lock.release()
+    time.sleep(0.05)
+    socketio.emit('game_update', world_state())
+  
 
 world_size = 100
 
@@ -46,6 +69,13 @@ class Block:
   
   def delete(self): world[self.position.x][self.position.y] = None
 
+from typing import Union
+
+Error = Union[str, None]
+
+def ok(msg=None): return msg, None
+def error(msg): return None, msg
+
 class Player:
   def __init__(self, NPC=False, energy = 100, position=None, color=Color.red()):
     cleanup()
@@ -58,7 +88,7 @@ class Player:
     self.last_update = time.time()
     players[self.id] = self
     self.NPC = NPC
-    self.action_queue = []
+    self.action_queue:(any, Callable[[any, Error]]) = []
 
   def get_energy(self):
     if not self.NPC:
@@ -74,39 +104,40 @@ class Player:
       'energy': self.energy
     }
 
-  def enqueue(self, action):
-    self.action_queue.append(action)
-    
+  def enqueue(self, action, callback=None):
+    self.action_queue.append((action, callback))
+  
 
-  def action(self, payload):
+  def action(self, payload)-> tuple[any, Error]:
     print(f'action {payload}')
-    if self.body.position.get() is not self.body: return 'Player is dead', 400
+    if self.body.position.get() is not self.body: return error('Player is dead')
     actiontype = payload['action']
     pos = self.body.position
     x, y = payload['x'], payload['y']
-    if not check_pos(x, y): return 'Invalid position', 400
+    if not check_pos(x, y): return error('Invalid position')
     dist = abs(pos.x - x) + abs(pos.y - y)
     if actiontype == 'move': dist += abs(x - payload['endx']) + abs(y - payload['endy'])
     cost = {'put': 15, 'move': 0, 'delete': -15, 'spawn': 15,}[actiontype] + dist ** 2
-    if self.get_energy() < cost: return 'Not enough energy', 400
+    if self.get_energy() < cost: return error('Not enough energy')
     self.energy -= cost
-    if actiontype == 'put': block = Block(Position(x, y), Color.fromhex(payload['color']))
+    if actiontype == 'put':
+      if world[x][y] is not None: return error('Block already at position')
+      block = Block(Position(x, y), Color.fromhex(payload['color']))
     elif actiontype == 'delete':
-      if world[x][y] is None: return 'No block at position', 400
+      if world[x][y] is None: return error('No block at position')
       world[x][y].delete()
     elif actiontype == 'move':
       endx, endy = payload['endx'], payload['endy']
-      if not check_pos(endx, endy): return 'Invalid position end position', 400
-      if world[endx][endy] is not None: return 'Block already at ending position', 400
-      if not self.body.move(endx, endy): return 'Invalid move', 400
+      if not check_pos(endx, endy): return error('Invalid position')
+      if world[endx][endy] is not None: return error('Block already at position')
+      if not self.body.move(endx, endy): return error('Invalid move')
     elif actiontype == 'spawn':
-      if world[x][y] is not None: return 'Block already at position', 400
+      if world[x][y] is not None: return error('Block already at position')
       spawn = Player(NPC=True, position=Position(x, y), color=Color.fromhex(payload['color']), energy= self.energy)
       self.energy = 0
-      return spawn.info(), 200
-      
-    else: raise ValueError(f'Invalid action type "{actiontype}"')
-    return self.info(), 200  
+      return ok(spawn.info())
+    else: return error("Invalid action")
+    return ok(self.info())
 
 
 def check_pos(x,y): return 0 <= x < world_size and 0 <= y < world_size

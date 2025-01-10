@@ -1,5 +1,8 @@
 import io from 'socket.io-client'
 
+import { Writable } from './store'
+import { active_script } from './scripting'
+
 let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -20,23 +23,40 @@ canvas.height = Math.min(window.innerWidth,window.innerHeight)
 app.appendChild(canvas)
 const ctx = canvas.getContext('2d')!
 
-import { active_script, player } from './store';
+const player = new Writable('player', {position:{x:0, y:0}, energy:0, id:0})
 
-const addEventListener = document.addEventListener
+const addPermanentEventListener = document.addEventListener.bind(document);
 
-let events = new Map<string, ((e:Event)=>{})[]>()
+const eventListeners: { type: string; listener: (e: Event) => void }[] = [];
 
-document.addEventListener = (type:string, listener:(e:any)=>{}) => {
-  if (!events.has(type)) {
-    events.set(type, [])
-    addEventListener(type, e=>events.get(type)!.forEach(listener => listener(e)))
-  }
-  events.get(type)!.push(listener)
+let script_counter = 0;
+
+document.addEventListener = function(type:string, listener:(e:Event)=>void) {
+  console.log('adding event listener', type, script_counter);
+  eventListeners.push({ type, listener });
+  addPermanentEventListener(type, listener);
+};
+
+function clearEventListeners() {
+  eventListeners.forEach(listenerInfo => {
+    const { type, listener } = listenerInfo;
+    console.log('removing event listener', type, script_counter);
+    document.removeEventListener(type, listener);
+  });
+  eventListeners.length = 0;
 }
+
+function load_script(script:string) {
+  clearEventListeners();
+  script_counter++;
+  console.log('loading script', script_counter);
+  eval(script);
+}
+
 
 codebutton.onclick = () => {window.location.href = '/code'}
 
-addEventListener('keyup', e => {
+addPermanentEventListener('keyup', e => {
   if(e.key === 'Escape') codebutton.click()
 })
 
@@ -61,10 +81,9 @@ function show_world(){
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   state.world.forEach((row, x) => row.forEach((color, y) => {
     if(color !== null){
+      draw_block(x, y, color)
       if (player.value.position.x === x && player.value.position.y === y){
-        draw_block(x, y, 'white')
-      }else{
-        draw_block(x, y, color)
+        // draw_block(x, y, 'white')
       }
     }
   }))
@@ -75,11 +94,10 @@ socket.on('game_update', (data:{world:(string|null)[][]}) => {
   state.world = data.world
   show_world()
 })
+const action_queue = new Map<number, {resolve: (value: Player) => void, reject: (reason: string) => void}>()
 
-function load_script(script:string){
-  (new Function('state', 'action', script))(state, action, world)
-}
 
+active_script.subscribe(load_script)
 
 async function reload_player(){
     socket.emit('new_player', (data:{position:{x:number, y:number}, energy:number, id:number}) => {
@@ -90,7 +108,7 @@ async function reload_player(){
 
 reloadbutton.onclick = reload_player
 
-load_script(active_script.value);
+console.log(JSON.stringify(player.value))
 if (player.value.id === 0) reload_player()
 
 
@@ -111,17 +129,34 @@ type ActionParams = {
   y: number
 }
 
+type Player = {
+  position: {
+    x: number,
+    y: number
+  },
+  energy: number,
+  id: number
+}
 
-async function action(params:ActionParams, actor = player.value){
-
-  socket.emit('action', {id: actor.id, ...params}, (data:{position:{x:number, y:number}, energy:number, id:number}) => {
-    // @ts-ignore
-    if (data=="Player not found") {
-      return reload_player()
-    }
-    if (data.id == player.value.id) {
-      player.set(data)
-    }
-    if (data.id) return data
+// @ts-ignore
+function action(params:ActionParams, actor = player.value):Promise<Player|string>{
+  const action_id = action_queue.size
+  return new Promise<Player>((resolve, reject) => {
+    action_queue.set(action_id, {resolve, reject})
+    socket.emit('action', {action_id, params, id: actor.id})
   })
 }
+
+socket.on('action_response', (data: {action_id: number, res: [Player, string|null]}) => {
+  
+  const action = action_queue.get(data.action_id)
+  if (action === undefined) return
+  let [res, error] = data.res
+  if (error){
+    action.reject(error)
+  }else{
+    console.log(res);
+    if (res.id === player.value.id){ player.set(res) }
+    action.resolve(res)
+  }
+})
