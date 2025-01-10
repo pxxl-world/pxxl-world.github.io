@@ -6,6 +6,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
+  --active: #191d66;
   background-color: #242424;
 
   font-synthesis: none;
@@ -17,6 +18,7 @@
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
+    --active: #9b9ed6;
     background-color: #ffffff;
   }
   a:hover {
@@ -76,7 +78,7 @@ canvas{
   flex-direction: column;
   height: 100%;
   padding: 10px;
-  background-color: #333;
+  background-color: var(--active);
   flex-grow: 1; /* Added to make contentarea take the remaining space */
   white-space: pre;
   font-family: monospace, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -87,5 +89,5 @@ canvas{
 }
 
 .active {
-  background-color: #444;
+  background-color: var(--active);
 }

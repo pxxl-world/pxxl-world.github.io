@@ -50,7 +50,9 @@ function load_script(script:string) {
   clearEventListeners();
   script_counter++;
   console.log('loading script', script_counter);
-  eval(script);
+  // eval(script)
+  const customfn = new Function('action', 'state', script)
+  customfn(action, state)
 }
 
 

@@ -22,7 +22,6 @@ async function create (x, y, color){
 let speed = 1
 
 document.addEventListener('keydown', e => {
-  console.log(e.key, script_counter);
   if(e.key === 'ArrowUp') walk(0, -speed)
   if(e.key === 'ArrowDown') walk(0, speed)
   if(e.key === 'ArrowLeft') walk(-speed, 0)

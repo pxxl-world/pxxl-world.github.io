@@ -17,8 +17,8 @@ export async function load_script(key:string):Promise<string>{
 export const active_character = new Writable('last_character', 'snake')
 export const active_script = new Writable('active_script', '')
 if (active_script.value === ''){
-  console.log('loading custom script');
-  active_script.set(await load_script(active_character.value))
+  // active_script.set(await load_script(active_character.value))
+  load_script(active_character.value).then(script => active_script.set(script))
 }
 export const custom_script = new Writable('custom_script', '')
 
