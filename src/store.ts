@@ -7,7 +7,11 @@ export class Writable<T>{
     if(localStorage.getItem(key) === null){
       this.value = defaultvalue!
     }else{
-      this.value = JSON.parse(localStorage.getItem(key)!) as T
+      try{
+        this.value = JSON.parse(localStorage.getItem(key)!) as T
+      }catch{
+        this.value = defaultvalue!
+      }
     }
   }
   set(value: any){

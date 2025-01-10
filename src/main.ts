@@ -79,7 +79,6 @@ function show_world(){
 
 const socket = io(backend_url)
 socket.on('game_update', (data:{world:(string|null)[][]}) => {
-
   state.world = data.world
   show_world()
 })
@@ -90,9 +89,17 @@ function load_script(script:string){
 
 
 async function reload_player(){
-  const res = await fetch(`${backend_url}/new_player`);
-  const data = await res.json();
-  player.set(data);
+  // const res = await fetch(`${backend_url}/new_player`);
+  // const data = await res.json();
+  // player.set(data);
+  console.log('new player');
+  
+
+  // send request through socket
+  socket.emit('new_player', (data:{position:{x:number, y:number}, energy:number, id:number}) => {
+    console.log(data);
+    player.set(data)
+  })
 }
 
 reloadbutton.onclick = reload_player
@@ -120,20 +127,11 @@ type ActionParams = {
 
 
 async function action(params:ActionParams, actor = player.value){
-  return await fetch(`${backend_url}/action`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id: actor.id, ...params})
-  }).then(async resp=>{
-    if (resp.status !== 200) {
-      resp.text().then(text=>{
-        console.log(text)
-        if (text === 'Player not found') reload_player()
-      })
-      return null
-    }
-    const res = await resp.json() as typeof player.value
-    if (res.id == player.value.id) player.set(res)
-    return res
-  })
+
+  socket.emit('action', {id: actor.id, ...params}, (data:{position:{x:number, y:number}, energy:number, id:number}) => {
+    // @ts-ignore
+    if (data=="Player not found") return reload_player()
+    if (data.id == player.value.id) player.set(data)
+  }
+  )
 }
