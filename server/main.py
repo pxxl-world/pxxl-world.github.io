@@ -17,10 +17,17 @@ from game import Player, players, world
 lock = threading.Lock()
 def world_state(): return {'world': [[block.color.tohex() if block is not None else None for block in row] for row in world],}
 
+import hmac
+
 @app.route('/redeploy', methods=['POST'])
 def redeploy():
-  secret = request.json.get('secret')
-  if secret != env['secret']: return "wrong secret", 401
+  # print(request.json)
+  # secret = request.json.get('secret')
+  # if secret != env['secret']: return "wrong secret", 401
+
+  hash = hmac.new(env['secret'].encode(), request.data, 'sha256').hexdigest()
+  if not hmac.compare_digest(hash, request.headers.get('X-Hub-Signature-256').split('=')[1]): return "wrong secret", 401
+
   print('redeploying')
   import os
   os.system('git pull --rebase && cd .. && npm run build')
