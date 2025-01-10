@@ -2,9 +2,6 @@ import io from 'socket.io-client'
 
 let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
 
-console.log(backend_url);
-
-
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 function button(text:string){
@@ -16,8 +13,6 @@ function button(text:string){
 
 const codebutton = button('Show Code')
 const reloadbutton = button('Reset Player')
-
-
 
 const canvas = document.createElement('canvas')
 canvas.width = Math.min(window.innerWidth,window.innerHeight)
@@ -43,8 +38,7 @@ codebutton.onclick = () => {window.location.href = '/code'}
 
 addEventListener('keyup', e => {
   if(e.key === 'Escape') codebutton.click()
-}
-)
+})
 
 const world_size = 100
 const block_size = canvas.width / world_size
@@ -56,13 +50,12 @@ function draw_block(x:number, y:number, color:string){
 }
 
 
-
 let world: (string|null)[][] = Array.from({length: world_size}, () => Array.from({length: world_size}, () => 'red'))
-
 const state = {player:player.value, world}
 
-player.subscribe(player => state.player = player)
-
+player.subscribe(player => {
+  state.player = player
+})
 
 function show_world(){
   ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -89,16 +82,9 @@ function load_script(script:string){
 
 
 async function reload_player(){
-  // const res = await fetch(`${backend_url}/new_player`);
-  // const data = await res.json();
-  // player.set(data);
-  console.log('new player');
-  
-
-  // send request through socket
-  socket.emit('new_player', (data:{position:{x:number, y:number}, energy:number, id:number}) => {
-    console.log(data);
+    socket.emit('new_player', (data:{position:{x:number, y:number}, energy:number, id:number}) => {
     player.set(data)
+    load_script(active_script.value)
   })
 }
 
@@ -130,8 +116,12 @@ async function action(params:ActionParams, actor = player.value){
 
   socket.emit('action', {id: actor.id, ...params}, (data:{position:{x:number, y:number}, energy:number, id:number}) => {
     // @ts-ignore
-    if (data=="Player not found") return reload_player()
-    if (data.id == player.value.id) player.set(data)
-  }
-  )
+    if (data=="Player not found") {
+      return reload_player()
+    }
+    if (data.id == player.value.id) {
+      player.set(data)
+    }
+    if (data.id) return data
+  })
 }

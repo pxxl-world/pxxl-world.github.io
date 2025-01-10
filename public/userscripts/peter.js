@@ -1,6 +1,9 @@
 
 // peter script
 
+console.log("loading peter", state.player.id);
+
+
 async function walk(dx, dy){
   console.log(state.player)
 

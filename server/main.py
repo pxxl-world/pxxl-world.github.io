@@ -21,9 +21,6 @@ import hmac
 
 @app.route('/redeploy', methods=['POST'])
 def redeploy():
-  # print(request.json)
-  # secret = request.json.get('secret')
-  # if secret != env['secret']: return "wrong secret", 401
 
   hash = hmac.new(env['secret'].encode(), request.data, 'sha256').hexdigest()
   if not hmac.compare_digest(hash, request.headers.get('X-Hub-Signature-256').split('=')[1]): return "wrong secret", 401
