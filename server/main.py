@@ -2,6 +2,9 @@ from flask import Flask, request
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import threading
+import json
+
+env = json.load(open('../.env.json'))
 
 app = Flask(__name__, static_folder='../dist', static_url_path='/')
 CORS(app)
@@ -14,42 +17,14 @@ from game import Player, players, world
 lock = threading.Lock()
 def world_state(): return {'world': [[block.color.tohex() if block is not None else None for block in row] for row in world],}
 
-@app.route('/game_state', methods=['GET'])
-def game_state(): return world_state(), 200
-
-@app.route('/new_player', methods=['GET'])
-def new_player():
-  with lock:
-    player = Player()
-    print('new player', player.info())
-    socketio.emit('game_update', world_state())
-    return player.info(), 200
-
-@app.route('/player_info/<int:player_id>', methods=['GET'])
-def player_info(player_id):
-  if player_id not in players: return 'Player not found', 404
-  return players[player_id].info(), 200
-
-@app.route('/action', methods=['POST'])
-def action():
-  with lock:
-    player_id = request.json['id']
-    if player_id not in players: return 'Player not found', 404
-    player = players[player_id]
-    try:
-      msg, code = player.action(request.json)
-      if code == 200: socketio.emit('game_update', world_state())
-    except Exception as e:
-      msg, code = str(e), 400
-    return msg, code
-
 @app.route('/redeploy', methods=['POST'])
 def redeploy():
-  with lock:
-    print('redeploying')
-    import os
-    os.system('git pull --rebase')
-    return "ok"
+  secret = request.json.get('secret')
+  if secret != env['secret']: return "wrong secret", 401
+  print('redeploying')
+  import os
+  os.system('git pull --rebase && cd .. && npm run build')
+  return "ok"
 
 @app.route('/hello', methods=['GET'])
 def hello(): return {"status": "ok"}, 200
@@ -64,12 +39,31 @@ def code():
 
 @socketio.on('connect')
 def handle_connect():
-  print('Client connected')
+  print(f'new client {request.sid}')
   socketio.emit('game_update', world_state())
 
 @socketio.on('disconnect')
 def handle_disconnect():
   print('Client disconnected')
+
+@socketio.on('new_player')
+def handle_new_player():
+  with lock:
+    print("new player request")
+    return Player().info()
+  
+@socketio.on('action')
+def handle_action(payload):
+  with lock:
+    print(f'action {payload}')
+    try: player = players[payload['id']]
+    except: return 'Player not found', 400
+    try:
+      msg, code = player.action(payload)
+      if code == 200: socketio.emit('game_update', world_state())
+    except Exception as e:
+      msg, code = str(e), 400
+    return msg, code
 
 import os, sys
 

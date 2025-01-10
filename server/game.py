@@ -58,6 +58,7 @@ class Player:
     self.last_update = time.time()
     players[self.id] = self
     self.NPC = NPC
+    self.action_queue = []
 
   def get_energy(self):
     if not self.NPC:
@@ -69,9 +70,13 @@ class Player:
   def info(self):
     return {
       'id': self.id,
-      'position': self.body.position,
+      'position': self.body.position.__dict__,
       'energy': self.energy
     }
+
+  def enqueue(self, action):
+    self.action_queue.append(action)
+    
 
   def action(self, payload):
     print(f'action {payload}')
