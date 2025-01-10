@@ -25,7 +25,7 @@ async function eat (x, y){
 }
 
 async function shoot(x,y,dx,dy){
-  let bullet = await action({action: 'spawn', x, y, color: '#ffffff'})
+  let bullet = await action({action: 'spawn', x, y, color: '#888888'})
   async function fly (bullet){
     if (!bullet) return
     let nx = bullet.position.x+dx
