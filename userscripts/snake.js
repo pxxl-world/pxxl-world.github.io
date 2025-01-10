@@ -10,9 +10,7 @@ async function walk(dx, dy){
   const y = state.player.position.y
   const endx = x + dx
   const endy = y + dy
-  if (!await action({action: 'move', x, y, endx, endy})){
-    return
-  }
+  console.log(await action({action: 'move', x, y, endx, endy}));
   await create(x,y, green)
 }
 
