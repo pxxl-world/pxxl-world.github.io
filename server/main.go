@@ -137,6 +137,11 @@ func main() {
 	fs := http.FileServer(http.Dir("../dist"))
 	http.Handle("/", fs)
 
+	http.HandleFunc("/code", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Code request")
+		http.ServeFile(w, r, "../dist/code.html")
+	})
+
 	var err error
 	if os.Getenv("DEV") != "" {
 		log.Println("Server started localhost:5000")
