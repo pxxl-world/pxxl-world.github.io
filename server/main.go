@@ -137,9 +137,14 @@ func main() {
 	fs := http.FileServer(http.Dir("../dist"))
 	http.Handle("/", fs)
 
-	log.Println("Server started on localhost:5000")
-	err := http.ListenAndServe(":5000", nil)
+	var err error
+	log.Println("Server started")
+	if os.Getenv("DEV") != "" {
+		err = http.ListenAndServe(":5000", nil)
+	} else {
+		err = http.ListenAndServeTLS(":443", "/etc/letsencrypt/live/zmanifold.com/fullchain.pem", "/etc/letsencrypt/live/zmanifold.com/privkey.pem", nil)
+	}
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		log.Fatal("ListenAndServeTLS: ", err)
 	}
 }
