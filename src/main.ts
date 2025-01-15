@@ -202,11 +202,8 @@ websocket.onmessage = (event) => {
       else action_promise.resolve(data.content)
     }
   }else if (data.message_type === 'ack'){
-    console.log('ack');
     const prom =  action_queue.get(data.action_id)
-    if (prom){
-      pingdisplay.textContent = ' ping: ' + (Date.now() - prom.timestamp) + 'ms'
-    }
+    if (prom) pingdisplay.textContent = ' ping: ' + (Date.now() - prom.timestamp) + 'ms'
   }else{
     console.error('unknown message type', data);
   }
