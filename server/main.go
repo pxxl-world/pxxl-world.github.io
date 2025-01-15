@@ -74,7 +74,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
-		log.Println("Waiting client message")
+		log.Println("Waiting for client message")
 		var msg game.Action
 		err = ws.ReadJSON(&msg)
 		if err != nil {
@@ -87,23 +87,27 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			delete(clients, msgChan)
 			break
 		}
-		var respond = func(info interface{}, err error) {
-			errormsg := ""
-			if err != nil {
-				errormsg = err.Error()
-			}
-			go sendMessage(msgChan, ServerMessage{
-				MessageType: "action_response",
-				Error:       errormsg,
-				Message:     info,
-				ActionId:    msg.ActionId,
-			})
-		}
+		go sendMessage(msgChan, ServerMessage{
+			MessageType: "ack",
+			Message:     "Received message",
+			ActionId:    msg.ActionId,
+		})
+
 		game.EnqueueAction(game.ActionRequest{
 			Action: msg,
 			Callback: func(player game.PlayerInfo, err error) {
 				log.Println("Action callback", player, err)
-				respond(player, err)
+
+				errormsg := ""
+				if err != nil {
+					errormsg = err.Error()
+				}
+				go sendMessage(msgChan, ServerMessage{
+					MessageType: "action_response",
+					Error:       errormsg,
+					Message:     player,
+					ActionId:    msg.ActionId,
+				})
 			},
 		})
 	}

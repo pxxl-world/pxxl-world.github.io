@@ -12,6 +12,9 @@ function button(text:string){
 }
 const codebutton = button('Show Code')
 const reloadbutton = button('Reset Player')
+const pingdisplay = document.createElement('span')
+app.appendChild(pingdisplay)
+pingdisplay.textContent = ' ping: 0ms'
 
 const canvas = document.createElement('canvas')
 const csize = Math.min(window.innerWidth,window.innerHeight)-codebutton.clientHeight-10
@@ -83,7 +86,7 @@ function show_world(){
 let websocket = new WebSocket(backend_url.replace('http', 'ws').replace('https', 'wss')+'/ws')
 console.log('connecting to', websocket.url);
 
-const action_queue = new Map<number, {resolve: (value: Player) => void, reject: (value:Player, reason: string) => void}>()
+const action_queue = new Map<number, {resolve: (value: Player) => void, reject: (value:Player, reason: string) => void, timestamp:number}>()
 let action_counter = 17
 
 
@@ -134,6 +137,9 @@ type ServerMessage = {
   content: Player,
   error: string|null,
   action_id: number
+} | {
+  message_type: 'ack',
+  action_id:number,
 }
 
 setInterval(() => {
@@ -162,7 +168,7 @@ function action(params:ActionParams, actor:Player = player.value) :Promise<Playe
     (p:Player, reason:string)=>{
       pupdate(p)
       reject(reason)
-    }})
+    }, timestamp: Date.now()})
     try{
       websocket.send(JSON.stringify(params))
     }catch(e){
@@ -194,6 +200,12 @@ websocket.onmessage = (event) => {
     } else{
       if (data.error) action_promise.reject(data.content, data.error)
       else action_promise.resolve(data.content)
+    }
+  }else if (data.message_type === 'ack'){
+    console.log('ack');
+    const prom =  action_queue.get(data.action_id)
+    if (prom){
+      pingdisplay.textContent = ' ping: ' + (Date.now() - prom.timestamp) + 'ms'
     }
   }else{
     console.error('unknown message type', data);
