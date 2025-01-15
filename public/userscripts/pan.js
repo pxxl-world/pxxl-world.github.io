@@ -33,14 +33,9 @@ async function shoot(x,y,dx,dy){
     let y = bullet.position.y
     let endx = x+dx
     let endy = y+dy
-    const newbullet = await action({action: 'move', x, y, endx, endy}, bullet)
-    .catch(e=>{
-      console.error("bullet error:",e)
-    })
-    if (bullet.id != newbullet.id) {
-      console.error(bullet.id, newbullet.id,"bullet change??")
-    }
-    fly(newbullet)
+    action({action: 'move', x, y, endx, endy}, bullet)
+    .then(fly)
+    .catch(e=>{})
   }
   console.log("shoot",state.player.energy);
   
@@ -56,12 +51,13 @@ setInterval(() => {
 
 document.addEventListener('keydown', e => {
   if (e.key.startsWith("Arrow")){
-    lock = false
     e.preventDefault()
     if (e.key === 'ArrowUp') direction = [0, -1]
     else if (e.key === 'ArrowDown') direction = [0, 1]
     else if (e.key === 'ArrowLeft') direction = [-1, 0]
     else if (e.key === 'ArrowRight') direction = [1, 0]
+    walk()
+    lock = false
   }
 })
 

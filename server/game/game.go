@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"math/rand"
 	"time"
 )
@@ -161,15 +160,17 @@ func checksize(x int) bool {
 	return !(x < 0 || x >= world_size)
 }
 
+func sqdistfn(x1 int, y1 int, x2 int, y2 int) int {
+	return (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)
+}
+
 func (player *Player) act(action Action) (PlayerInfo, error) {
 
 	if !checksize(action.X) || !checksize(action.Y) || !checksize(action.NewX) || !checksize(action.NewY) {
 		return player.Info(), errors.New("out of bounds")
 	}
-	dist := int(math.Abs(float64(player.body.Position.X-action.X)) + math.Abs(float64(player.body.Position.Y-action.Y)))
-	cost := (dist * dist) / 4
-
-	log.Println("Processing action", action.Type, dist, player.Energy)
+	cost := sqdistfn(player.body.Position.X, player.body.Position.Y, action.X, action.Y) / 4
+	log.Println("Processing action", action.Type, cost, player.Energy)
 
 	switch action.Type {
 	case "info":
@@ -180,7 +181,6 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 			return player.Info(), errors.New("not enough energy")
 		}
 		player.Energy -= cost
-
 		err := PutBlock(action.X, action.Y, action.Color)
 		if err == nil && action.Energy > 0 {
 			npc := &Player{
@@ -202,9 +202,8 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 		player.Energy -= cost
 		return player.Info(), DeleteBlock(action.X, action.Y)
 	case "move":
-		dist := math.Abs(float64(action.X-action.NewX)) + math.Abs(float64(action.Y-action.NewY))
-		cost += int(dist*dist/4) + 1
-		log.Println("Moving block", action.X, action.Y, action.NewX, action.NewY, dist, cost)
+		cost += sqdistfn(action.X, action.Y, action.NewX, action.NewY)/4 + 1
+		log.Println("Moving block", action.X, action.Y, action.NewX, action.NewY, cost)
 		if cost > player.Energy {
 			return player.Info(), errors.New("not enough energy")
 		}

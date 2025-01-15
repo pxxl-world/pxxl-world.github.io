@@ -1,17 +1,13 @@
-// import io from 'socket.io-client'
-
 import { Writable } from './store'
 import { active_script } from './scripting'
 
 let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
-
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 function button(text:string){
   const button = document.createElement('button')
   button.innerText = text
   app.appendChild(button)
-
   return button
 }
 const codebutton = button('Show Code')
@@ -22,13 +18,9 @@ const csize = Math.min(window.innerWidth,window.innerHeight)-codebutton.clientHe
 canvas.width = csize
 canvas.height = csize
 app.appendChild(canvas)
-
 const ctx = canvas.getContext('2d')!
-
 const player = new Writable('player', {position:{x:0, y:0}, energy:0, id:"0"})
-
 const addPermanentEventListener = document.addEventListener.bind(document);
-
 const eventListeners: { type: string; listener: (e: Event) => void }[] = [];
 
 let script_counter = 0;
@@ -54,10 +46,9 @@ function load_script(script:string) {
   console.log('loading script', script_counter);
   console.log('script', script);
   
-  const customfn = new Function('action', 'state', script)
-  customfn(action, state)
+  const customfn = new Function('action', 'state', 'player', script)
+  customfn(action, state, player)
 }
-
 
 codebutton.onclick = () => {window.location.href = '/code'}
 
@@ -85,18 +76,14 @@ player.subscribe(player => {
 function show_world(){
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   state.world.forEach((row, x) => row.forEach((color, y) => {
-    if(color !== null){
-      draw_block(x, y, color)
-      if (player.value.position.x === x && player.value.position.y === y){
-      }
-    }
+    if(color !== null)draw_block(x, y, color)
   }))
 }
 
 let websocket = new WebSocket(backend_url.replace('http', 'ws').replace('https', 'wss')+'/ws')
 console.log('connecting to', websocket.url);
 
-const action_queue = new Map<number, {resolve: (value: Player) => void, reject: (reason: string) => void}>()
+const action_queue = new Map<number, {resolve: (value: Player) => void, reject: (value:Player, reason: string) => void}>()
 let action_counter = 17
 
 
@@ -115,12 +102,14 @@ reloadbutton.onclick = reload_player
 if (player.value.id === "0") reload_player()
 
 
+type ActionType = 'put'| 'move'| 'delete' | 'info'
+
 type ActionParams = {
   player_id?:PlayerId,
   action_id?: number,
-  action: 'put'| 'move'| 'delete' | 'info',
-  x: number,
-  y: number,
+  action: ActionType
+  x?: number,
+  y?: number,
   endx?: number,
   endy?: number,
   color?: string,
@@ -137,56 +126,55 @@ type Player = {
   id: PlayerId
 }
 
-
-function sanitize_action_params(params:ActionParams){
-  if (typeof params.player_id !== 'string') throw new Error('player_id must be a string')
-  if (params.action_id === undefined) params.action_id = action_counter ++
-  return params
+type ServerMessage = {
+  message_type: 'world_update',
+  content:{blocks: (string|null)[][]}
+} | {
+  message_type: 'action_response',
+  content: Player,
+  error: string|null,
+  action_id: number
 }
 
-function action(params:ActionParams, actor = player.value):Promise<Player>{
+setInterval(() => {
+  if (player.value.energy < 100) player.value.energy = Math.min(player.value.energy + 100/20, 100)
+}, 1000/20);
 
+function action(params:ActionParams, actor:Player = player.value) :Promise<Player>{
   if (params.player_id === undefined) params.player_id = actor.id
   const action_id = action_counter ++
   params.action_id = action_id
 
-  params = sanitize_action_params(params)
-  
+  if (typeof params.player_id !== 'string') throw new Error('player_id must be a string')
+  if (params.action_id === undefined) params.action_id = action_counter ++
+
   return new Promise<Player>((resolve, reject) => {
-    action_queue.set(action_id, {resolve, reject})
+    const pupdate = (p:Player)=>{
+      if (p.id == actor.id) {
+        actor.position = p.position
+        actor.energy = p.energy
+      }
+    }
+    action_queue.set(action_id, {resolve:(p:Player)=>{
+      pupdate(p)
+      resolve(p)
+    }, reject:
+    (p:Player, reason:string)=>{
+      pupdate(p)
+      reject(reason)
+    }})
     try{
-      websocket.send(JSON.stringify(params)) 
+      websocket.send(JSON.stringify(params))
     }catch(e){
       websocket.close()
       console.error('error', e);
       websocket = new WebSocket(backend_url.replace('http', 'ws').replace('https', 'wss')+'/ws')
       action_queue.clear()
     }
-    if (params.action === 'put' && params.energy){
-      action({action:'info', x: 0, y:0, }, actor)
-    }
+    if (params.action === 'put' && params.energy) action({action: 'info'}, actor)
   })
 }
 
-
-type ServerMessage = {
-  message_type: 'world_update',
-  content:{blocks: (string|null)[][]}
-} | {
-  message_type: 'action_response',
-
-  content: Player,
-  error: string|null,
-  action_id: number
-}
-
-
-
-setInterval(() => {
-  if (player.value.energy < 100)player.set({...player.value, energy: Math.min(player.value.energy + 100/20, 100)})
-}, 1000/20);
-
- 
 websocket.onmessage = (event) => {
   let data: ServerMessage
   try{
@@ -195,25 +183,17 @@ websocket.onmessage = (event) => {
     console.error("error parsing", event.data);
     return
   }
-  
   if (data.message_type === 'world_update'){
     state.world = data.content.blocks
     show_world()
   }else if (data.message_type === 'action_response'){
     let action_promise = action_queue.get(data.action_id)
     if (!action_promise) {
-      console.error(data.error)
       console.error('action not found', data.action_id);
-      return
-    }
-    if (data.content.id === player.value.id) {
-      player.set(data.content)
-    }
-    if (data.error){
-      action_promise.reject(data.error)
-      console.log('action error', data.content);
-    }else{
-      action_promise.resolve(data.content)
+      console.log(data.error);
+    } else{
+      if (data.error) action_promise.reject(data.content, data.error)
+      else action_promise.resolve(data.content)
     }
   }else{
     console.error('unknown message type', data);
