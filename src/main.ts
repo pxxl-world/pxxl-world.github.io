@@ -1,4 +1,4 @@
-import io from 'socket.io-client'
+// import io from 'socket.io-client'
 
 import { Writable } from './store'
 import { active_script } from './scripting'
@@ -11,9 +11,9 @@ function button(text:string){
   const button = document.createElement('button')
   button.innerText = text
   app.appendChild(button)
+
   return button
 }
-
 const codebutton = button('Show Code')
 const reloadbutton = button('Reset Player')
 
@@ -21,9 +21,10 @@ const canvas = document.createElement('canvas')
 canvas.width = Math.min(window.innerWidth,window.innerHeight)
 canvas.height = Math.min(window.innerWidth,window.innerHeight)
 app.appendChild(canvas)
+
 const ctx = canvas.getContext('2d')!
 
-const player = new Writable('player', {position:{x:0, y:0}, energy:0, id:0})
+const player = new Writable('player', {position:{x:0, y:0}, energy:0, id:"0"})
 
 const addPermanentEventListener = document.addEventListener.bind(document);
 
@@ -50,7 +51,8 @@ function load_script(script:string) {
   clearEventListeners();
   script_counter++;
   console.log('loading script', script_counter);
-  // eval(script)
+  console.log('script', script);
+  
   const customfn = new Function('action', 'state', script)
   customfn(action, state)
 }
@@ -85,51 +87,45 @@ function show_world(){
     if(color !== null){
       draw_block(x, y, color)
       if (player.value.position.x === x && player.value.position.y === y){
-        // draw_block(x, y, 'white')
       }
     }
   }))
 }
 
-const socket = io(backend_url)
-socket.on('game_update', (data:{world:(string|null)[][]}) => {
-  state.world = data.world
-  show_world()
-})
+let websocket = new WebSocket(backend_url.replace('http', 'ws').replace('https', 'wss')+'/ws')
+console.log('connecting to', websocket.url);
+
 const action_queue = new Map<number, {resolve: (value: Player) => void, reject: (reason: string) => void}>()
+let action_counter = 17
 
 
-active_script.subscribe(load_script)
-
-async function reload_player(){
-    socket.emit('new_player', (data:{position:{x:number, y:number}, energy:number, id:number}) => {
-    player.set(data)
+function reload_player(){
+  console.log('reloading player');
+  action({action: 'put', x: 0, y: 0, player_id : "44"}).then(newplayer=>{
+    player.set(newplayer)
     load_script(active_script.value)
+    
+  }).catch(error => { 
+    console.error('error', error);
   })
 }
 
 reloadbutton.onclick = reload_player
-
-console.log(JSON.stringify(player.value))
-if (player.value.id === 0) reload_player()
+if (player.value.id === "0") reload_player()
 
 
 type ActionParams = {
-  action: 'put',
+  player_id?:PlayerId,
+  action_id?: number,
+  action: 'put'| 'move'| 'delete' | 'info',
   x: number,
   y: number,
-  color: string
-} | {
-  action: 'move',
-  startx: number,
-  starty: number,
-  endx: number,
-  endy: number
-} | {
-  action: 'delete',
-  x: number,
-  y: number
+  endx?: number,
+  endy?: number,
+  color?: string,
+  energy?: number
 }
+type PlayerId = string
 
 type Player = {
   position: {
@@ -137,28 +133,105 @@ type Player = {
     y: number
   },
   energy: number,
-  id: number
+  id: PlayerId
 }
 
-// @ts-ignore
-function action(params:ActionParams, actor = player.value):Promise<Player|string>{
-  const action_id = action_queue.size
+
+function sanitize_action_params(params:ActionParams){
+  if (typeof params.player_id !== 'string') throw new Error('player_id must be a string')
+  if (params.action_id === undefined) params.action_id = action_counter ++
+  return params
+}
+
+function action(params:ActionParams, actor = player.value):Promise<Player>{
+
+  if (params.player_id === undefined) params.player_id = actor.id
+  const action_id = action_counter ++
+  params.action_id = action_id
+
+  params = sanitize_action_params(params)
+  
   return new Promise<Player>((resolve, reject) => {
     action_queue.set(action_id, {resolve, reject})
-    socket.emit('action', {action_id, params, id: actor.id})
+    try{
+      websocket.send(JSON.stringify(params)) 
+    }catch(e){
+      websocket.close()
+      console.error('error', e);
+      websocket = new WebSocket(backend_url.replace('http', 'ws').replace('https', 'wss')+'/ws')
+      action_queue.clear()
+    }
+    if (params.action === 'put' && params.energy){
+      action({action:'info', x: 0, y:0, }, actor)
+    }
   })
 }
 
-socket.on('action_response', (data: {action_id: number, res: [Player, string|null]}) => {
-  
-  const action = action_queue.get(data.action_id)
-  if (action === undefined) return
-  let [res, error] = data.res
-  if (error){
-    action.reject(error)
-  }else{
-    console.log(res);
-    if (res.id === player.value.id){ player.set(res) }
-    action.resolve(res)
+
+type ServerMessage = {
+  message_type: 'world_update',
+  content:{blocks: (string|null)[][]}
+} | {
+  message_type: 'action_response',
+
+  content: Player,
+  error: string|null,
+  action_id: number
+}
+
+
+
+setInterval(() => {
+  if (player.value.energy < 100)player.set({...player.value, energy: Math.min(player.value.energy + 100/20, 100)})
+}, 1000/20);
+
+ 
+websocket.onmessage = (event) => {
+  let data: ServerMessage
+  try{
+    data = JSON.parse(event.data) as ServerMessage
+  }catch(e){
+    console.error("error parsing", event.data);
+    return
   }
-})
+  
+  if (data.message_type === 'world_update'){
+    state.world = data.content.blocks
+    show_world()
+  }else if (data.message_type === 'action_response'){
+    let action_promise = action_queue.get(data.action_id)
+    if (!action_promise) {
+      console.error(data.error)
+      console.error('action not found', data.action_id);
+      return
+    }
+    if (data.content.id === player.value.id) {
+      player.set(data.content)
+    }
+    if (data.error){
+      action_promise.reject(data.error)
+      console.log('action error', data.content);
+    }else{
+      action_promise.resolve(data.content)
+    }
+  }else{
+    console.error('unknown message type', data);
+  }
+}
+
+websocket.onopen = () => {
+  try{
+    const p = player.value.position
+    action({action: 'move', x: p.x, y: p.y, endx: p.x, endy: p.y})
+    .catch(error => {
+      if (error === 'player not found') reload_player()
+      if (error === 'block already exists') return
+      console.error('error', error);
+    })
+    
+  }catch (e){
+    console.error('error', e);
+    reload_player();
+  }
+  load_script(active_script.value)
+}
