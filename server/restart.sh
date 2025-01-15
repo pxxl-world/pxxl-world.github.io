@@ -10,7 +10,7 @@ while true; do
     # Build and run the server
     echo "Building and starting server..."
     cd ..
-    git pull --rebase
+    git pull
     npm run build
     cd server
     go build -o main main.go
