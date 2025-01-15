@@ -138,10 +138,11 @@ func main() {
 	http.Handle("/", fs)
 
 	var err error
-	log.Println("Server started")
 	if os.Getenv("DEV") != "" {
+		log.Println("Server started localhost:5000")
 		err = http.ListenAndServe(":5000", nil)
 	} else {
+		log.Println("HTTPS server started zmanifold.com")
 		err = http.ListenAndServeTLS(":443", "/etc/letsencrypt/live/zmanifold.com/fullchain.pem", "/etc/letsencrypt/live/zmanifold.com/privkey.pem", nil)
 	}
 	if err != nil {
