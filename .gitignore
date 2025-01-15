@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-main
+**/main
 **/__pycache__/*
 venv
 .env.json
