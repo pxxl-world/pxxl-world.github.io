@@ -9,7 +9,12 @@ echo "Starting server with auto-restart (max $MAX_RESTARTS restarts)..."
 while true; do
     # Build and run the server
     echo "Building and starting server..."
-    cd .. && npm run build && cd server && go build -o main main.go && ./main
+    cd ..
+    git pull --rebase
+    npm run build
+    cd server
+    go build -o main main.go
+    ./main
 
     # Capture the exit code of the server
     EXIT_CODE=$?
