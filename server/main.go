@@ -122,6 +122,9 @@ func main() {
 		})
 	})
 
+	fs := http.FileServer(http.Dir("../dist"))
+	http.Handle("/", fs)
+
 	log.Println("Server started on localhost:5000")
 	err := http.ListenAndServe(":5000", nil)
 	if err != nil {

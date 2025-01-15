@@ -18,8 +18,9 @@ const codebutton = button('Show Code')
 const reloadbutton = button('Reset Player')
 
 const canvas = document.createElement('canvas')
-canvas.width = Math.min(window.innerWidth,window.innerHeight)
-canvas.height = Math.min(window.innerWidth,window.innerHeight)
+const csize = Math.min(window.innerWidth,window.innerHeight)-codebutton.clientHeight-10
+canvas.width = csize
+canvas.height = csize
 app.appendChild(canvas)
 
 const ctx = canvas.getContext('2d')!
