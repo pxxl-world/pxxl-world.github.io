@@ -12,7 +12,7 @@ export class Writable<T>{
       }
     }
   }
-  set(value: any){
+  set(value: T){
     this.value = value
     localStorage.setItem(this.key, JSON.stringify(value))
     this.subscribers.forEach(subscriber => subscriber(value))

@@ -23,7 +23,6 @@ async function create (x, y, color){
 let green = '#00ff00'
 
 
-
 create(1,0,green)
 create(0,1,green)
 create(-1,0,green)
