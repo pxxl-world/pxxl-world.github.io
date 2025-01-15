@@ -13,7 +13,9 @@ async function walk(){
   const y = state.player.position.y
   const endx = x + direction[0] * speed
   const endy = y + direction[1] * speed
-  await action({action: 'move', x, y, endx, endy})
+  await action({action: 'move', x, y, endx, endy}).catch(e=>{
+    console.error("walk error:",e)
+  })
 }
 
 async function create (x, y, color){
@@ -25,17 +27,25 @@ async function eat (x, y){
 }
 
 async function shoot(x,y,dx,dy){
-  let bullet = await action({action: 'spawn', x, y, color: '#888888'})
-  async function fly (bullet){
-    if (!bullet) return
-    let nx = bullet.position.x+dx
-    let ny = bullet.position.y+dy
-    if (state.world[nx][ny] != null){
-      await action({action: 'delete', x: nx, y: ny}, bullet)
+  async function fly(bullet){
+
+    let x = bullet.position.x
+    let y = bullet.position.y
+    let endx = x+dx
+    let endy = y+dy
+    const newbullet = await action({action: 'move', x, y, endx, endy}, bullet)
+    .catch(e=>{
+      console.error("bullet error:",e)
+    })
+    if (bullet.id != newbullet.id) {
+      console.error(bullet.id, newbullet.id,"bullet change??")
     }
-    bullet = await action({action: 'move', ...bullet.position, endx: nx, endy: ny}, bullet)
-    fly(bullet)
+    fly(newbullet)
   }
+  console.log("shoot",state.player.energy);
+  
+  let bullet = await action({action: 'put', x, y, color: '#888888', energy: state.player.energy-15})
+
   fly(bullet)
 }
 
