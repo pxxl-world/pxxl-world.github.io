@@ -217,6 +217,7 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 }
 
 func GameLoop(broadcast func(*WorldInfo)) {
+
 	for {
 		var update = false
 		select {

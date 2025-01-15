@@ -5,7 +5,9 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"server/game"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -107,7 +109,15 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func restartServer(w http.ResponseWriter, r *http.Request) {
+	time.Sleep(2 * time.Second)
+	os.Exit(42)
+}
+
 func main() {
+
+	path, _ := os.Executable()
+	log.Println(path)
 	log.Println("Starting server...")
 	http.HandleFunc("/ws", handleConnections)
 
@@ -121,6 +131,8 @@ func main() {
 			Message:     world,
 		})
 	})
+
+	http.HandleFunc("/redeploy", restartServer)
 
 	fs := http.FileServer(http.Dir("../dist"))
 	http.Handle("/", fs)
