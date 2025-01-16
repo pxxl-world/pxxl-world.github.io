@@ -50,7 +50,7 @@ function load_script(script:string) {
   console.log('script', script);
   
   const customfn = new Function('action', 'state', 'player', script)
-  customfn(action, state, player)
+  customfn(action, state, player.value)
 }
 
 codebutton.onclick = () => {window.location.href = '/code'}
@@ -101,7 +101,10 @@ function reload_player(){
   })
 }
 
-reloadbutton.onclick = reload_player
+reloadbutton.onclick = ()=>{
+  reload_player()
+  reloadbutton.onkeydown = (e) => e.preventDefault();
+}
 if (player.value.id === "0") reload_player()
 
 
@@ -171,6 +174,7 @@ function action(params:ActionParams, actor:Player = player.value) :Promise<Playe
     }, timestamp: Date.now()})
     try{
       websocket.send(JSON.stringify(params))
+      if (websocket.readyState !== websocket.OPEN) throw new Error('websocket not open')
     }catch(e){
       websocket.close()
       console.error('error', e);

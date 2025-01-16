@@ -1,71 +1,79 @@
+let color = '#888888'
 
-let color = '#ff4400'
-let tail = []
-
-let direction = [1,0]
 let speed = 1
-let lock = true
 
+let sent = false
+let dt = 0
+let running = false
+let interval = 1000/20
+
+direction = [0, 0]
 
 async function walk(){
-  if (lock) return
-  const x = state.player.position.x
-  const y = state.player.position.y
+  if (!running)return
+  dt = Date.now()
+  await step()
+  dt = Date.now() - dt
+  setTimeout(()=>walk(), interval)
+}
+
+function step(){
+  console.log("step");
+  const x = player.position.x
+  const y = player.position.y
   const endx = x + direction[0] * speed
   const endy = y + direction[1] * speed
-  await action({action: 'move', x, y, endx, endy}).catch(e=>{
-    console.error("walk error:",e)
+  return action({action: 'move', x, y, endx, endy})
+  .catch(e=>{console.log("walk error:",e)})
+}
+
+
+function shoot(){
+
+  let dir = [...lastdirection]
+  if (!dir[0] && !dir[1]) dir= [1,0]
+  action({action: 'put', color: color, x: player.position.x+dir[0], y: player.position.y+dir[1], energy:50}).then(bullet=>{
+
+    async function fly (bullet){
+      let endx = bullet.position.x+dir[0]
+      let endy = bullet.position.y+dir[1]
+      if (state.world[endx][endy] != null)await action({action: 'delete', x: endx, y: endy}, bullet)
+      action({action: 'move', x: bullet.position.x, y: bullet.position.y, endx: bullet.position.x+dir[0], endy: bullet.position.y+dir[1]}, bullet)
+      .then(fly)
+      .catch(e=>{})
+    }
+    fly(bullet )
   })
+
 }
 
-async function create (x, y, color){
-  return await action({action: 'put', x:x, y:y, color})
-}
-
-async function eat (x, y){
-  return await action({action: 'delete', x:x, y:y})
-}
-
-async function shoot(x,y,dx,dy){
-  async function fly(bullet){
-
-    let x = bullet.position.x
-    let y = bullet.position.y
-    let endx = x+dx
-    let endy = y+dy
-    action({action: 'move', x, y, endx, endy}, bullet)
-    .then(fly)
-    .catch(e=>{})
-  }
-  console.log("shoot",state.player.energy);
-  
-  let bullet = await action({action: 'put', x, y, color: '#888888', energy: state.player.energy-15})
-
-  fly(bullet)
-}
-
-setInterval(() => {
-  walk()
-}, 100);
-
+const keymap = new Map()
 
 document.addEventListener('keydown', e => {
+  // if (keymap.has(e.key)){
   if (e.key.startsWith("Arrow")){
     e.preventDefault()
-    if (e.key === 'ArrowUp') direction = [0, -1]
-    else if (e.key === 'ArrowDown') direction = [0, 1]
-    else if (e.key === 'ArrowLeft') direction = [-1, 0]
-    else if (e.key === 'ArrowRight') direction = [1, 0]
-    walk()
-    lock = false
+    keymap.set(e.key, true)
+    direction[0] = (keymap.get('ArrowRight') - keymap.get('ArrowLeft'))
+    direction[1] = (keymap.get('ArrowDown') - keymap.get('ArrowUp'))
+    if (!running){
+      running = true
+      walk()
+    }
   }
 })
 
 
+var lastdirection = direction.slice()
 document.addEventListener('keyup', e => {
-  if (e.key.startsWith("Arrow")) lock = true
-  if (e.key === ' ') {
-    let [dx,dy] = direction
-    shoot(state.player.position.x+dx, state.player.position.y+dy, dx, dy)
+  if (keymap.has(e.key)){
+    keymap.set(e.key, false)
+    lastdirection = [...direction]
+    direction[0] = (keymap.get('ArrowRight') - keymap.get('ArrowLeft'))
+    direction[1] = (keymap.get('ArrowDown') - keymap.get('ArrowUp'))
+    if (!direction[0] && !direction[1]) running = false
+  }
+  if (e.key == ' '){
+    shoot()
   }
 })
