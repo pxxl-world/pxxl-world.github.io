@@ -50,9 +50,9 @@ const keymap = new Map(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].map(k
 
 function setkeymap(key, active){
   keymap.set(key, active)
-  lastdirection = [...direction]
   direction = [keymap.get('ArrowRight') - keymap.get('ArrowLeft'), keymap.get('ArrowDown') - keymap.get('ArrowUp')]  
   if (direction[0] || direction[1]){
+    lastdirection = [...direction]
     if (!running){
       running = true
       walk()

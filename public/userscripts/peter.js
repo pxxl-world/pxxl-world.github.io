@@ -1,15 +1,4 @@
-
 let color = '#00ff00'
-
-async function create (x, y, color){
-  action({action: 'put', x: state.player.position.x+x, y: state.player.position.y+y, color})
-}
-
-create(1,0,color)
-create(0,1,color)
-create(-1,0,color)
-create(0,-1,color)
-
 let speed = 1
 
 let sent = false
@@ -18,6 +7,13 @@ let running = false
 let interval = 1000/20
 
 direction = [0, 0]
+
+console.log(player.position);
+
+action({action: 'put', color: color, x:state.player.position.x, y:state.player.position.y+1, energy:0})
+action({action: 'put', color: color, x:state.player.position.x, y:state.player.position.y-1, energy:0})
+action({action: 'put', color: color, x:state.player.position.x+1, y:state.player.position.y, energy:0})
+action({action: 'put', color: color, x:state.player.position.x-1, y:state.player.position.y, energy:0})
 
 async function walk(){
   if (!running)return
@@ -28,41 +24,34 @@ async function walk(){
 }
 
 function step(){
-  console.log("step");
-  const x = state.player.position.x
-  const y = state.player.position.y
+  const x = player.position.x
+  const y = player.position.y
   const endx = x + direction[0] * speed
   const endy = y + direction[1] * speed
   return action({action: 'move', x, y, endx, endy})
   .catch(e=>{console.log("walk error:",e)})
 }
 
+const keymap = new Map(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].map(key=>[key, false]))
 
-const keymap = new Map([
-  ['ArrowUp', false],
-  ['ArrowDown', false],
-  ['ArrowLeft', false],
-  ['ArrowRight', false]
-])
-
-document.addEventListener('keydown', e => {
-  if (keymap.has(e.key)){
-    e.preventDefault()
-    keymap.set(e.key, true)
-    direction[0] = (keymap.get('ArrowRight') - keymap.get('ArrowLeft'))
-    direction[1] = (keymap.get('ArrowDown') - keymap.get('ArrowUp'))
+function setkeymap(key, active){
+  keymap.set(key, active)
+  direction = [keymap.get('ArrowRight') - keymap.get('ArrowLeft'), keymap.get('ArrowDown') - keymap.get('ArrowUp')]  
+  if (direction[0] || direction[1]){
     if (!running){
       running = true
       walk()
     }
+  }else{
+    running = false
   }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key.startsWith("Arrow"))e.preventDefault()
+  setkeymap(e.key, true)
 })
 
 document.addEventListener('keyup', e => {
-  if (keymap.has(e.key)){
-    keymap.set(e.key, false)
-    direction[0] = (keymap.get('ArrowRight') - keymap.get('ArrowLeft'))
-    direction[1] = (keymap.get('ArrowDown') - keymap.get('ArrowUp'))
-    if (!direction[0] && !direction[1]) running = false
-  }
+  setkeymap(e.key, false)
 })

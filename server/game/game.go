@@ -170,7 +170,10 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 		return player.Info(), errors.New("out of bounds")
 	}
 	cost := sqdistfn(player.body.Position.X, player.body.Position.Y, action.X, action.Y) / 4
-	log.Println("Processing action", action.Type, cost, player.Energy)
+	log.Println("Processing action", action.Type, struct {
+		X int
+		Y int
+	}{action.X, action.Y}, cost, "player:", player.Energy, player.body.Position)
 
 	switch action.Type {
 	case "info":

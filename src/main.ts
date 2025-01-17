@@ -150,6 +150,7 @@ setInterval(() => {
 }, 1000/20);
 
 function action(params:ActionParams, actor:Player = player.value) :Promise<Player>{
+  console.log(params)
   if (params.player_id === undefined) params.player_id = actor.id
   const action_id = action_counter ++
   params.action_id = action_id
