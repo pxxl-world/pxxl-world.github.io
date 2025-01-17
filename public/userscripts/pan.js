@@ -18,7 +18,6 @@ async function walk(){
 }
 
 function step(){
-  console.log("step");
   const x = player.position.x
   const y = player.position.y
   const endx = x + direction[0] * speed
@@ -47,33 +46,30 @@ function shoot(){
 
 }
 
-const keymap = new Map()
+const keymap = new Map(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].map(key=>[key, false]))
 
-document.addEventListener('keydown', e => {
-  // if (keymap.has(e.key)){
-  if (e.key.startsWith("Arrow")){
-    e.preventDefault()
-    keymap.set(e.key, true)
-    direction[0] = (keymap.get('ArrowRight') - keymap.get('ArrowLeft'))
-    direction[1] = (keymap.get('ArrowDown') - keymap.get('ArrowUp'))
+function setkeymap(key, active){
+  keymap.set(key, active)
+  lastdirection = [...direction]
+  direction = [keymap.get('ArrowRight') - keymap.get('ArrowLeft'), keymap.get('ArrowDown') - keymap.get('ArrowUp')]  
+  if (direction[0] || direction[1]){
     if (!running){
       running = true
       walk()
     }
+  }else{
+    running = false
   }
-})
+}
 
+document.addEventListener('keydown', e => {
+
+  if (e.key.startsWith("Arrow"))e.preventDefault()
+  setkeymap(e.key, true)
+})
 
 var lastdirection = direction.slice()
 document.addEventListener('keyup', e => {
-  if (keymap.has(e.key)){
-    keymap.set(e.key, false)
-    lastdirection = [...direction]
-    direction[0] = (keymap.get('ArrowRight') - keymap.get('ArrowLeft'))
-    direction[1] = (keymap.get('ArrowDown') - keymap.get('ArrowUp'))
-    if (!direction[0] && !direction[1]) running = false
-  }
-  if (e.key == ' '){
-    shoot()
-  }
+  setkeymap(e.key, false)
+  if (e.key == ' ') shoot()
 })
