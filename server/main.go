@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -119,6 +120,15 @@ func restartServer(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	logFile, errLog := os.OpenFile("server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if errLog != nil {
+		log.Fatal("Failed to open log file: ", errLog)
+	}
+	defer logFile.Close()
+
+	multiWriter := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(multiWriter)
 
 	path, _ := os.Executable()
 	log.Println(path)
