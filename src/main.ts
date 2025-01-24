@@ -13,7 +13,10 @@ function button(text:string){
 const codebutton = button('Show Code')
 const reloadbutton = button('Reset Player')
 const pingdisplay = document.createElement('span')
+const energydisplay = document.createElement('span')
 app.appendChild(pingdisplay)
+app.appendChild(energydisplay)
+
 pingdisplay.textContent = ' ping: 0ms'
 
 const canvas = document.createElement('canvas')
@@ -147,6 +150,7 @@ type ServerMessage = {
 
 setInterval(() => {
   if (player.value.energy < 100) player.value.energy = Math.min(player.value.energy + 100/20, 100)
+  energydisplay.textContent = ' energy: ' + player.value.energy
 }, 1000/20);
 
 function action(params:ActionParams, actor:Player = player.value) :Promise<Player>{
