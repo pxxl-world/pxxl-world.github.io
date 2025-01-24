@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const world_size = 100
+const world_size = 200
 
 type Position struct {
 	X int `json:"x"`
