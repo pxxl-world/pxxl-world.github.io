@@ -10,6 +10,9 @@ function button(text:string){
   app.appendChild(button)
   return button
 }
+
+clearInterval
+
 const codebutton = button('Show Code')
 const reloadbutton = button('Reset Player')
 const pingdisplay = document.createElement('span')
