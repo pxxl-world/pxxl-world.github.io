@@ -258,7 +258,8 @@ func GameLoop(broadcast func(*WorldInfo)) {
 			}
 
 			if checksize(snake.body.Position.X-snake_dir.x) && checksize(snake.body.Position.Y-snake_dir.y) &&
-				world[snake.body.Position.X-snake_dir.x][snake.body.Position.Y-snake_dir.y] == nil {
+				world[snake.body.Position.X-snake_dir.x][snake.body.Position.Y-snake_dir.y] == nil &&
+				rand.Int()%10 == 6 {
 				action.Type = "put"
 				action.X = snake.body.Position.X - snake_dir.x
 				action.Y = snake.body.Position.Y - snake_dir.y
@@ -284,40 +285,6 @@ func GameLoop(broadcast func(*WorldInfo)) {
 				},
 			})
 
-			// 	EnqueueAction(ActionRequest{
-			// 		Action: Action{
-			// 			PlayerId: snake.Id,
-			// 			ActionId: rand.Uint64(),
-			// 			Type:     "put",
-			// 			X:        snake.body.Position.X - snake_dir.x,
-			// 			Y:        snake.body.Position.Y - snake_dir.y,
-			// 			Color:    "#00ff00",
-			// 			Energy:   0,
-			// 		},
-			// 		Callback: func(player PlayerInfo, err error) {
-			// 			if err != nil {
-			// 				log.Println("Error putting block: ", err)
-			// 			}
-			// 		},
-			// 	})
-			// } else {
-			// 	EnqueueAction(ActionRequest{
-			// 		Action: Action{
-			// 			PlayerId: snake.Id,
-			// 			ActionId: rand.Uint64(),
-			// 			Type:     "move",
-			// 			X:        snake.body.Position.X,
-			// 			Y:        snake.body.Position.Y,
-			// 			NewX:     newx,
-			// 			NewY:     newy,
-			// 		},
-			// 		Callback: func(player PlayerInfo, err error) {
-			// 			if err != nil {
-			// 				log.Println("Error moving snake: ", err)
-			// 			}
-			// 		},
-			// 	})
-			// }
 		}
 
 		ctr := 0
