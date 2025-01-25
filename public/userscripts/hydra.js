@@ -16,8 +16,11 @@ async function walk(){
 }
 
 async function step(){
+
+  await scan(player)
   const x = player.position.x
   const y = player.position.y
+
   let speed = 1
   if (player.energy>90) speed = 2
   const endx = x + direction[0] * speed
@@ -25,11 +28,7 @@ async function step(){
   await tryeat(player,endx, endy)//.then(()=>
   await action({action: 'move', x, y, endx, endy}).catch(e=>{console.log("walk error:",e)}).then(e=>{
     if (e.energy>50){
-      var color = '#ff0000'
-      if (e.energy>70) color = '#ff8800'
-      if (e.energy>80) color = '#ffff00'
-      if (e.energy>85) color = '#88ff00'
-      if (e.energy>90) color = '#00ff00'
+      var color = '#220000'
       action({action:'put', color, x,y}).catch(console.error)
     }
   })
@@ -38,6 +37,19 @@ async function step(){
 async function tryeat(self,x,y){
   if (state.world[x][y] != null && (player.position.x != x || player.position.y != y))
     return await action({action:'delete', x, y}, self).catch(e=>console.error('eat error:',e))
+}
+
+
+async function scan(bullet){
+  const range = 5
+  for (let dx = -range; dx <= range; dx++){
+    for (let dy = -range; dy <= range; dy++){
+      nx = bullet.position.x+dx
+      ny = bullet.position.y+dy
+      if((dx==0 && dy==0) || nx<0 || ny<0 || nx>=state.world.length || ny>=state.world.length) continue
+      if (state.world[nx][ny] == '#ff0000' || bullet.energy < 80) await tryeat(bullet, nx, ny)
+    }
+  }
 }
 
 async function shoot(){
@@ -53,15 +65,7 @@ async function shoot(){
       let endy = bullet.position.y+dir[1]*2
       
       const range = 5
-      for (let dx = -range; dx <= range; dx++){
-        for (let dy = -range; dy <= range; dy++){
-          nx = bullet.position.x+dx
-          ny = bullet.position.y+dy
-          if(dx==0 && dy==0) continue
-          if (nx<0 || ny<0 || nx>=state.world.length || ny>=state.world.length) continue
-          if (state.world[nx][ny] == '#ff0000' || bullet.energy < 80) await tryeat(bullet, nx, ny)
-        }
-      }
+      await scan(bullet)
       await tryeat(bullet, endx, endy)
       action({action: 'move', x: bullet.position.x, y: bullet.position.y, endx, endy}, bullet).catch(e=>console.error('move error',e))
       .then(fly)

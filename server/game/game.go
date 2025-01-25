@@ -166,6 +166,11 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 	if !checksize(action.X) || !checksize(action.Y) || !checksize(action.NewX) || !checksize(action.NewY) {
 		return player.Info(), errors.New("out of bounds")
 	}
+
+	if world[player.body.Position.X][player.body.Position.Y] != player.body {
+		return player.Info(), errors.New("player DEAD")
+	}
+
 	cost := sqdistfn(player.body.Position.X, player.body.Position.Y, action.X, action.Y) / 4
 
 	switch action.Type {
@@ -195,7 +200,11 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 		if cost > player.Energy {
 			return player.Info(), errors.New("not enough energy")
 		}
+		if world[action.X][action.Y] == player.body {
+			return player.Info(), errors.New("cannot delete self")
+		}
 		player.Energy -= cost
+
 		return player.Info(), DeleteBlock(action.X, action.Y)
 	case "move":
 		cost += sqdistfn(action.X, action.Y, action.NewX, action.NewY)/4 + 1
