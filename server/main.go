@@ -21,6 +21,7 @@ type ServerMessage struct {
 }
 
 var clients = make(map[chan<- []byte]bool)
+var clientsMutex = make(chan bool, 1) // Mutex for clients map
 
 func broadcast(msg ServerMessage) {
 	data, err := json.Marshal(msg)
@@ -44,7 +45,13 @@ func sendMessage(client chan<- []byte, msg ServerMessage) {
 	if err != nil {
 		log.Println("Error marshalling message: ", err)
 	}
+	clientsMutex <- true
+	if ok := clients[client]; !ok {
+		log.Println("Client not found")
+		return
+	}
 	client <- data
+	<-clientsMutex
 }
 
 var upgrader = websocket.Upgrader{
@@ -88,8 +95,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 				MessageType: "action_response",
 				Error:       jsonerror.Error(),
 			})
+			clientsMutex <- true
 			delete(clients, msgChan)
 			close(msgChan)
+			<-clientsMutex
 			break
 		}
 		go sendMessage(msgChan, ServerMessage{
