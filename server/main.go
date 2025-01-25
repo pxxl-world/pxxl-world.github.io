@@ -23,14 +23,19 @@ type ServerMessage struct {
 var clients = make(map[chan<- []byte]bool)
 
 func broadcast(msg ServerMessage) {
-	log.Println("broadcasting message to", len(clients), "clients")
 	data, err := json.Marshal(msg)
 	if err != nil {
 		log.Println("Error marshalling broadcast: ", err)
 	}
 
 	for client := range clients {
-		go func() { client <- data }()
+		go func() {
+			select {
+			case client <- data:
+			case <-time.After(5 * time.Second):
+				log.Println("Client timeout")
+			}
+		}()
 	}
 }
 
@@ -64,7 +69,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		for {
-			log.Println("Waiting for msgChan")
 			msg := <-msgChan
 			err := ws.WriteMessage(websocket.TextMessage, msg)
 			if err != nil {
@@ -75,7 +79,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
-		log.Println("Waiting for client message")
 		var msg game.Action
 		err = ws.ReadJSON(&msg)
 		if err != nil {
@@ -86,6 +89,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 				Error:       jsonerror.Error(),
 			})
 			delete(clients, msgChan)
+			close(msgChan)
 			break
 		}
 		go sendMessage(msgChan, ServerMessage{
@@ -97,8 +101,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		game.EnqueueAction(game.ActionRequest{
 			Action: msg,
 			Callback: func(player game.PlayerInfo, err error) {
-				log.Println("Action callback", player, err)
-
 				errormsg := ""
 				if err != nil {
 					errormsg = err.Error()
