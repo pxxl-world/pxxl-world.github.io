@@ -221,6 +221,11 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 
 var snake = players[AddPlayer().Id]
 
+var snake_dir = struct {
+	x int
+	y int
+}{0, 0}
+
 func GameLoop(broadcast func(*WorldInfo)) {
 	// snake move
 
@@ -232,36 +237,87 @@ func GameLoop(broadcast func(*WorldInfo)) {
 		} else {
 			log.Println("Snake alive")
 
-			dirx := rand.Int()%3 - 1
-			diry := rand.Int()%3 - 1
-
-			for !checksize(snake.body.Position.X+dirx) ||
-				!checksize(snake.body.Position.Y+diry) ||
-				world[snake.body.Position.X+dirx][snake.body.Position.Y+diry] != nil ||
-				(dirx == 0 && diry == 0) {
-				dirx = rand.Int()%3 - 1
-				diry = rand.Int()%3 - 1
+			if rand.Int()%10 == 0 {
+				snake_dir.x = rand.Int()%3 - 1
+				snake_dir.y = rand.Int()%3 - 1
 			}
 
-			newx := (snake.body.Position.X + dirx) % world_size
-			newy := (snake.body.Position.Y + diry) % world_size
+			for !checksize(snake.body.Position.X+snake_dir.x) ||
+				!checksize(snake.body.Position.Y+snake_dir.y) ||
+				(snake_dir.x == 0 && snake_dir.y == 0) {
+				snake_dir.x = rand.Int()%3 - 1
+				snake_dir.y = rand.Int()%3 - 1
+			}
 
+			newx := snake.body.Position.X + snake_dir.x
+			newy := snake.body.Position.Y + snake_dir.y
+
+			action := Action{
+				PlayerId: snake.Id,
+				ActionId: 0,
+			}
+
+			if checksize(snake.body.Position.X-snake_dir.x) && checksize(snake.body.Position.Y-snake_dir.y) &&
+				world[snake.body.Position.X-snake_dir.x][snake.body.Position.Y-snake_dir.y] == nil {
+				action.Type = "put"
+				action.X = snake.body.Position.X - snake_dir.x
+				action.Y = snake.body.Position.Y - snake_dir.y
+				action.Color = "#00ff00"
+				action.Energy = 0
+			} else if checksize(newx) && checksize(newy) && world[newx][newy] != nil {
+				action.Type = "delete"
+				action.X = newx
+				action.Y = newy
+			} else {
+				action.Type = "move"
+				action.X = snake.body.Position.X
+				action.Y = snake.body.Position.Y
+				action.NewX = newx
+				action.NewY = newy
+			}
 			EnqueueAction(ActionRequest{
-				Action: Action{
-					PlayerId: snake.Id,
-					ActionId: rand.Uint64(),
-					Type:     "move",
-					X:        snake.body.Position.X,
-					Y:        snake.body.Position.Y,
-					NewX:     newx,
-					NewY:     newy,
-				},
+				Action: action,
 				Callback: func(player PlayerInfo, err error) {
 					if err != nil {
 						log.Println("Error moving snake: ", err)
 					}
 				},
 			})
+
+			// 	EnqueueAction(ActionRequest{
+			// 		Action: Action{
+			// 			PlayerId: snake.Id,
+			// 			ActionId: rand.Uint64(),
+			// 			Type:     "put",
+			// 			X:        snake.body.Position.X - snake_dir.x,
+			// 			Y:        snake.body.Position.Y - snake_dir.y,
+			// 			Color:    "#00ff00",
+			// 			Energy:   0,
+			// 		},
+			// 		Callback: func(player PlayerInfo, err error) {
+			// 			if err != nil {
+			// 				log.Println("Error putting block: ", err)
+			// 			}
+			// 		},
+			// 	})
+			// } else {
+			// 	EnqueueAction(ActionRequest{
+			// 		Action: Action{
+			// 			PlayerId: snake.Id,
+			// 			ActionId: rand.Uint64(),
+			// 			Type:     "move",
+			// 			X:        snake.body.Position.X,
+			// 			Y:        snake.body.Position.Y,
+			// 			NewX:     newx,
+			// 			NewY:     newy,
+			// 		},
+			// 		Callback: func(player PlayerInfo, err error) {
+			// 			if err != nil {
+			// 				log.Println("Error moving snake: ", err)
+			// 			}
+			// 		},
+			// 	})
+			// }
 		}
 
 		ctr := 0
