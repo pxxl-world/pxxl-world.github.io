@@ -263,7 +263,7 @@ func GameLoop(broadcast func(*WorldInfo)) {
 				action.Type = "put"
 				action.X = snake.body.Position.X - snake_dir.x
 				action.Y = snake.body.Position.Y - snake_dir.y
-				action.Color = "#00ff00"
+				action.Color = "#004400"
 				action.Energy = 0
 			} else if checksize(newx) && checksize(newy) && world[newx][newy] != nil {
 				action.Type = "delete"
