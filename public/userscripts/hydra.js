@@ -23,15 +23,16 @@ async function step(){
   const endx = x + direction[0] * speed
   const endy = y + direction[1] * speed
   await tryeat(player,endx, endy)//.then(()=>
-  await action({action: 'move', x, y, endx, endy}).catch(e=>{console.log("walk error:",e)})
-  if (player.energy>50){
-    var color = '#ff0000'
-    if (player.energy>70) color = '#ff8800'
-    if (player.energy>80) color = '#ffff00'
-    if (player.energy>85) color = '#88ff00'
-    if (player.energy>90) color = '#00ff00'
-    await action({action:'put', color, x,y}).catch(console.error)
-  }
+  await action({action: 'move', x, y, endx, endy}).catch(e=>{console.log("walk error:",e)}).then(e=>{
+    if (e.energy>50){
+      var color = '#ff0000'
+      if (e.energy>70) color = '#ff8800'
+      if (e.energy>80) color = '#ffff00'
+      if (e.energy>85) color = '#88ff00'
+      if (e.energy>90) color = '#00ff00'
+      action({action:'put', color, x,y}).catch(console.error)
+    }
+  })
 
 }
 

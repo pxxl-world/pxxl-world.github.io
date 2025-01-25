@@ -34,7 +34,7 @@ func broadcast(msg ServerMessage) {
 			select {
 			case client <- data:
 			case <-time.After(5 * time.Second):
-				log.Println("Client timeout")
+				log.Println("Client timeout", len(clients))
 			}
 		}()
 	}
