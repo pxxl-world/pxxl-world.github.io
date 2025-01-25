@@ -1,7 +1,8 @@
 import { Writable } from './store'
 import { active_script } from './scripting'
 
-let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
+// let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
+let backend_url = (window.location.hostname.includes('zmanifold'))?"https://zmanifold.com":window.location.origin
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 function button(text:string){
