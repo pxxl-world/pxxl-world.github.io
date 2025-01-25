@@ -33,7 +33,6 @@ async function step(){
       action({action:'put', color, x,y}).catch(console.error)
     }
   })
-
 }
 
 async function tryeat(self,x,y){

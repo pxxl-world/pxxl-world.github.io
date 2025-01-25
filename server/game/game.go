@@ -61,13 +61,11 @@ func MoveBlock(x int, y int, new_x int, new_y int) error {
 		return errors.New("block does not exist")
 	}
 	if world[new_x][new_y] != nil {
-		log.Println("Block already exists", new_x, new_y, world[new_x][new_y])
 		return errors.New("block already exists")
 	}
 	world[new_x][new_y] = world[x][y]
 	world[x][y] = nil
 	world[new_x][new_y].Position = Position{new_x, new_y}
-	log.Println("Block moved", x, y, new_x, new_y)
 	return nil
 }
 
@@ -97,7 +95,6 @@ func EnqueueAction(req ActionRequest) {
 		if player.npc {
 			ptype = "npc"
 		}
-		log.Println("Enqueueing action", req.Action.Type, ptype)
 		select {
 		case player.actionQueue <- req:
 		default:
@@ -170,10 +167,6 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 		return player.Info(), errors.New("out of bounds")
 	}
 	cost := sqdistfn(player.body.Position.X, player.body.Position.Y, action.X, action.Y) / 4
-	log.Println("Processing action", action.Type, struct {
-		X int
-		Y int
-	}{action.X, action.Y}, cost, "player:", player.Energy, player.body.Position)
 
 	switch action.Type {
 	case "info":
@@ -206,7 +199,6 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 		return player.Info(), DeleteBlock(action.X, action.Y)
 	case "move":
 		cost += sqdistfn(action.X, action.Y, action.NewX, action.NewY)/4 + 1
-		log.Println("Moving block", action.X, action.Y, action.NewX, action.NewY, cost)
 		if cost > player.Energy {
 			return player.Info(), errors.New("not enough energy")
 		}
@@ -221,11 +213,13 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 func GameLoop(broadcast func(*WorldInfo)) {
 
 	for {
-		var update = false
+
+		ctr := 0
 		select {
 		case spawn := <-spawn_queue:
 			newplayer := AddPlayer()
-			update = true
+
+			ctr++
 			spawn.Callback(newplayer, nil)
 		default:
 		}
@@ -238,13 +232,15 @@ func GameLoop(broadcast func(*WorldInfo)) {
 			}
 			select {
 			case action := <-player.actionQueue:
-				update = true
+
+				ctr++
 				info, err := player.act(action.Action)
 				action.Callback(info, err)
 			default:
 			}
 		}
-		if update {
+		if ctr > 0 {
+			log.Println("Processed ", ctr, " actions")
 			worldInfo := GetWorld()
 			broadcast(&worldInfo)
 		}
