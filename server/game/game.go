@@ -219,9 +219,50 @@ func (player *Player) act(action Action) (PlayerInfo, error) {
 	}
 }
 
+var snake = players[AddPlayer().Id]
+
 func GameLoop(broadcast func(*WorldInfo)) {
+	// snake move
 
 	for {
+
+		if world[snake.body.Position.X][snake.body.Position.Y] != snake.body {
+			snake = players[AddPlayer().Id]
+			log.Println("Snake died")
+		} else {
+			log.Println("Snake alive")
+
+			dirx := rand.Int()%3 - 1
+			diry := rand.Int()%3 - 1
+
+			for !checksize(snake.body.Position.X+dirx) ||
+				!checksize(snake.body.Position.Y+diry) ||
+				world[snake.body.Position.X+dirx][snake.body.Position.Y+diry] != nil ||
+				(dirx == 0 && diry == 0) {
+				dirx = rand.Int()%3 - 1
+				diry = rand.Int()%3 - 1
+			}
+
+			newx := (snake.body.Position.X + dirx) % world_size
+			newy := (snake.body.Position.Y + diry) % world_size
+
+			EnqueueAction(ActionRequest{
+				Action: Action{
+					PlayerId: snake.Id,
+					ActionId: rand.Uint64(),
+					Type:     "move",
+					X:        snake.body.Position.X,
+					Y:        snake.body.Position.Y,
+					NewX:     newx,
+					NewY:     newy,
+				},
+				Callback: func(player PlayerInfo, err error) {
+					if err != nil {
+						log.Println("Error moving snake: ", err)
+					}
+				},
+			})
+		}
 
 		ctr := 0
 		select {
