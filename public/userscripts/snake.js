@@ -24,6 +24,7 @@ function step(){
   return action({action: 'move', x, y, endx, endy})
   .then(()=>{action({action:'put', color:color, x, y})})
   .catch(e=>{console.log("walk error:",e)})
+  if(state)
 }
 
 const keymap = new Map(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].map(key=>[key, false]))

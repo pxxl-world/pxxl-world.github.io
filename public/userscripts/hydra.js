@@ -37,7 +37,7 @@ async function step(){
 
 async function tryeat(self,x,y){
   if (state.world[x][y] != null && (player.position.x != x || player.position.y != y))
-    return await action({action:'delete', x, y}, self).catch(console.error)
+    return await action({action:'delete', x, y}, self).catch(e=>console.error('eat error:',e))
 }
 
 async function shoot(){
@@ -51,17 +51,19 @@ async function shoot(){
     async function fly (bullet){
       let endx = bullet.position.x+dir[0]*2
       let endy = bullet.position.y+dir[1]*2
-      await tryeat(bullet, endx, endy)
+      
       const range = 5
       for (let dx = -range; dx <= range; dx++){
         for (let dy = -range; dy <= range; dy++){
           nx = bullet.position.x+dx
           ny = bullet.position.y+dy
+          if(dx==0 && dy==0) continue
           if (nx<0 || ny<0 || nx>=state.world.length || ny>=state.world.length) continue
           if (state.world[nx][ny] == '#ff0000' || bullet.energy < 80) await tryeat(bullet, nx, ny)
         }
       }
-      action({action: 'move', x: bullet.position.x, y: bullet.position.y, endx, endy}, bullet).catch(console.error)
+      await tryeat(bullet, endx, endy)
+      action({action: 'move', x: bullet.position.x, y: bullet.position.y, endx, endy}, bullet).catch(e=>console.error('move error',e))
       .then(fly)
       .catch(e=>{})
     }
