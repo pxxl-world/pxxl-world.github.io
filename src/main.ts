@@ -2,7 +2,7 @@ import { Writable } from './store'
 import { active_script } from './scripting'
 
 // let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
-let backend_url = (window.location.hostname.includes('zmanifold'))?"https://zmanifold.com":window.location.origin
+let backend_url = (window.location.hostname.includes('zmanifold'))?"https://zmanifold.com":'http://'+window.location.hostname+':5000'
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 function button(text:string){
@@ -158,7 +158,6 @@ setInterval(() => {
 }, 1000/20);
 
 function action(params:ActionParams, actor:Player = player.value) :Promise<Player>{
-  console.log(params)
   if (params.player_id === undefined) params.player_id = actor.id
   const action_id = action_counter ++
   params.action_id = action_id
