@@ -22,7 +22,7 @@ while true; do
 
     # Check if the exit code matches the restart condition
     # if [ $EXIT_CODE -ne $RESTART_EXIT_CODE ]; then
-    if true; then
+    if false; then
         echo "Server exited with a non-restart code. Stopping."
         break
     fi
