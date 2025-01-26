@@ -100,7 +100,7 @@ func broadcastMessage(msg ServerMessage) {
 		log.Println("Error marshalling message: ", err)
 	}
 	websockets.mu.Lock()
-	log.Println("Broadcasting message to ", len(websockets.connections), " clients")
+	// log.Println("Broadcasting message to ", len(websockets.connections), " clients")
 	defer websockets.mu.Unlock()
 	for _, c := range websockets.connections {
 		go c.send(data)

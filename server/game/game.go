@@ -235,8 +235,6 @@ func GameLoop(broadcast func(*WorldInfo)) {
 			snake = players[AddPlayer().Id]
 			log.Println("Snake died")
 		} else {
-			log.Println("Snake alive")
-
 			if rand.Int()%10 == 0 {
 				snake_dir.x = rand.Int()%3 - 1
 				snake_dir.y = rand.Int()%3 - 1
@@ -313,7 +311,7 @@ func GameLoop(broadcast func(*WorldInfo)) {
 			}
 		}
 		if ctr > 0 {
-			log.Println("Processed ", ctr, " actions")
+			// log.Println("Processed ", ctr, " actions")
 			worldInfo := GetWorld()
 			broadcast(&worldInfo)
 		}
