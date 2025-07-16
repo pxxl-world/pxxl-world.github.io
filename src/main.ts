@@ -16,6 +16,15 @@ clearInterval
 
 const codebutton = button('Show Code')
 const reloadbutton = button('Reset Player')
+const docbutton = button('Documentation')
+docbutton.onclick = () => {
+    window.open('/docs/character_scripting.md', '_blank')
+}
+
+app.appendChild(codebutton)
+app.appendChild(reloadbutton)
+app.appendChild(docbutton)
+
 const pingdisplay = document.createElement('span')
 const energydisplay = document.createElement('span')
 app.appendChild(pingdisplay)

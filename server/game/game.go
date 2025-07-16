@@ -296,10 +296,7 @@ func GameLoop(broadcast func(*WorldInfo)) {
 		}
 		for _, player := range players {
 			if !player.npc {
-				player.Energy = player.Energy + energy_per_second/fps
-				if player.Energy > max_energy {
-					player.Energy = max_energy
-				}
+				player.Energy = min(player.Energy+energy_per_second/fps, max_energy)
 			}
 			select {
 			case action := <-player.actionQueue:
