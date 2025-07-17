@@ -12,6 +12,8 @@ export class Writable<T>{
       }
     }
   }
+
+
   set(value: T){
     this.value = value
     localStorage.setItem(this.key, JSON.stringify(value))

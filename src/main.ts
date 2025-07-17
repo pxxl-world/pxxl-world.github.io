@@ -1,41 +1,129 @@
 import { Writable } from './store'
 import { active_script } from './scripting'
-import { DbConnection } from './module_bindings';
+import { Action, ActionType, DbConnection, EventContext, GameAction, PutAction, ReducerEventContext, Tile } from './module_bindings';
 
 // let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
 let backend_url = (window.location.hostname.includes('zmanifold'))?"https://zmanifold.com":'http://'+window.location.hostname+':5000'
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 
+let dbtoken = new Writable("dbtoken", "")
 
-
-
-console.log("LOADED");
 
 DbConnection.builder()
 .withUri("ws://localhost:3000")
 .withModuleName("pixel")
-.withToken("")
-.onConnect(()=>console.log("logged in"))
-.onConnectError(e=>console.log(e))
+.withToken(dbtoken.value)
+.onConnect((connect, id, token )=>{
+  console.log("connected.");
+  dbtoken.set(token)
+  connect.reducers.spawn();
+  connect.subscriptionBuilder()
+  .onApplied(c=>{
+    c.db.tile.onInsert(i => update_world(i))
+    c.db.tile.onUpdate((u,o,n) => {
+      let [x,y] = int2pos(o.pos);
+      state.world[x][y] = null
+      update_world(u)
+    })
+    c.db.tile.onDelete((d, old) => {
+      let [x,y] = int2pos(old.pos);
+      state.world[x][y] = null
+      update_world(d)
+    })
+  })
+  .onError(console.error)
+  .subscribe(`SELECT * FROM tile`)
+
+  connect.subscriptionBuilder()
+  .onApplied(c=>{
+    let player = c.db.person.conn.find(id)!
+    let bod = c.db.tile.id.find(player.bodytile)!
+    const move = () => {
+      bod.pos += 1;
+      send_action(
+        {
+          "player": bod.id,
+          "pos": bod.pos,
+          "typ": {"tag": "Move"}
+        })
+      .catch(e=>console.error(e))
+      setTimeout(move, 1000/10)
+    }
+    setTimeout(move, 1000/10)
+
+  })
+  .onError(console.error)
+  .subscribe(`SELECT * FROM person WHERE conn == '${id.toHexString()}'`)
+
+  connect.reducers.onAction((e, a)=>{
+    actionqueue.get(actionkey(a))?.(e)
+  })
+
+  let actionqueue = new Map<actionKey, (ctx: ReducerEventContext)=>void> ()
+
+  type actionKey = `${number}:${number}:${string}`
+
+  const actionkey = (g:GameAction):actionKey=>`${g.pos}:${g.player}:${g.typ.tag}`
+
+  const send_action = (action:GameAction)=>{
+    return new Promise<void>((resolve, reject)=>{
+
+      actionqueue.set(actionkey(action), ctx=>{
+        if (ctx.event.status.tag == "Committed"){
+          resolve()
+        }else{
+          reject(ctx.event.status)
+        }
+        actionqueue.delete(actionkey(action))
+      })
+      connect.reducers.action(action)
+    })
+  }
+
+
+})
+
+.onConnectError(e=>console.error(e))
 .build()
 
-  
+
+const update_world = (c:EventContext)=>{
+  for (let tile of c.db.tile.iter()){
+    let [x,y] = int2pos(tile.pos);
+    state.world[x][y] = int2color(tile.color)
+  }
+  show_world()
+}
+
+const int2color = (k:number) =>{
+  k = k >> 8
+  let b = k & 255;
+  k = k >> 8
+  let g = k & 255;
+  k = k >> 8
+  let r = k & 255;
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+const int2pos = (k:number)=>{
+  return [k%(world_size), Math.floor(k/(world_size))]
+}
+
+export function button(text:string){
+  const button = document.createElement('button')
+  button.innerText = text
+  app.appendChild(button)
+  return button
+}
+
+
+// let worldListeners = new Map<number, ((tile:Tile)=>void) []> ()
 
 
 
 
-
-// export function button(text:string){
-//   const button = document.createElement('button')
-//   button.innerText = text
-//   app.appendChild(button)
-//   return button
-// }
-
-// clearInterval
-
-// const codebutton = button('Show Code')
+const codebutton = button('Show Code')
 // const reloadbutton = button('Reset Player')
 // export const docbutton = button('Documentation')
 // docbutton.onclick = () => {
@@ -54,14 +142,14 @@ DbConnection.builder()
 
 // pingdisplay.textContent = ' ping: 0ms'
 
-// const canvas = document.createElement('canvas')
-// const csize = Math.min(window.innerWidth,window.innerHeight)-codebutton.clientHeight-10
-// canvas.width = csize
-// canvas.height = csize
-// app.appendChild(canvas)
-// const ctx = canvas.getContext('2d')!
-// const player = new Writable('player', {position:{x:0, y:0}, energy:0, id:"0"})
-// const addPermanentEventListener = document.addEventListener.bind(document);
+const canvas = document.createElement('canvas')
+const csize = Math.min(window.innerWidth,window.innerHeight)-codebutton.clientHeight-10
+canvas.width = csize
+canvas.height = csize
+app.appendChild(canvas)
+const ctx = canvas.getContext('2d')!
+const player = new Writable('player', {position:{x:0, y:0}, energy:0, id:"0"})
+const addPermanentEventListener = document.addEventListener.bind(document);
 // const eventListeners: { type: string; listener: (e: Event) => void }[] = [];
 
 // let script_counter = 0;
@@ -111,35 +199,35 @@ DbConnection.builder()
 //   customfn(...Object.values(script_args))
 // }
 
-// codebutton.onclick = () => {window.location.href = '/code'}
+codebutton.onclick = () => {window.location.href = '/code'}
 
-// addPermanentEventListener('keyup', e => {
-//   if(e.key === 'Escape') codebutton.click()
-// })
+addPermanentEventListener('keyup', e => {
+  if(e.key === 'Escape') codebutton.click()
+})
 
-// const world_size = 200
-// const block_size = canvas.width / world_size
-
-
-// function draw_block(x:number, y:number, color:string){
-//   ctx.fillStyle = color
-//   ctx.fillRect(x * block_size, y * block_size, block_size, block_size)
-// }
+const world_size = 1<<7
+const block_size = canvas.width / world_size
 
 
-// let world: (string|null)[][] = Array.from({length: world_size}, () => Array.from({length: world_size}, () => 'red'))
-// const state = {player:player.value, world}
+function draw_block(x:number, y:number, color:string){
+  ctx.fillStyle = color
+  ctx.fillRect(x * block_size, y * block_size, block_size, block_size)
+}
+
+
+let world: (string|null)[][] = Array.from({length: world_size}, () => Array.from({length: world_size}, () => null))
+const state = {player:player.value, world}
 
 // player.subscribe(player => {
 //   state.player = player
 // })
 
-// function show_world(){
-//   ctx.clearRect(0, 0, canvas.width, canvas.height)
-//   state.world.forEach((row, x) => row.forEach((color, y) => {
-//     if(color !== null)draw_block(x, y, color)
-//   }))
-// }
+function show_world(){
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  state.world.forEach((row, x) => row.forEach((color, y) => {    
+    if(color !== null)draw_block(x, y, color)
+  }))
+}
 
 // let websocket = new WebSocket(backend_url.replace('http', 'ws').replace('https', 'wss')+'/ws')
 // console.log('connecting to', websocket.url);
