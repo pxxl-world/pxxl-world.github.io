@@ -1,4 +1,5 @@
 // import {custom_script, last_character, active_script} from './store'
+import { button } from './main'
 import { load_script, active_character, custom_script, active_script } from './scripting'
 
 const codeeditor = document.createElement('div')
@@ -18,10 +19,26 @@ codeeditor.appendChild(contentarea)
 const exitbutton = document.createElement('button')
 exitbutton.innerText = 'play'
 document.body.appendChild(exitbutton)
+
+
+const docbutton = document.createElement('button')
+docbutton.innerText = "documentation"
+docbutton.onclick = () => {
+    window.open('/docs/character_scripting.md', '_blank')
+}
+document.body.appendChild(docbutton)
+
+console.log(document.body);
+
+
+
 exitbutton.onclick = () => {
   window.location.href = '/'
 }
+
 document.addEventListener('keyup', e => {if(e.key === 'Escape') exitbutton.click()})
+
+
 
 ;(async ()=>{
   let default_character_list = await fetch('/userscripts/list.json').then(res => res.json());

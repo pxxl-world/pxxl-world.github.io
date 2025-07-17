@@ -1,17 +1,18 @@
 let color = '#000000'
-
-
 let sent = false
 let dt = 0
-let running = false
+
 let interval = 1000/20
 
 
-direction = [0, 0]
-
 
 async function walk(){
-  if (!running)return
+
+
+  console.log(keypressed("ArrowUp"));
+  console.log(direction());
+
+  if (!(direction()[0] || direction()[1])) return
   dt = Date.now()
   await step()
   dt = Date.now() - dt
@@ -19,18 +20,27 @@ async function walk(){
 }
 
 
+
+function direction(){
+  return [
+    keypressed("ArrowRight") - keypressed("ArrowLeft"),
+    keypressed("ArrowDown") - keypressed("ArrowUp"),
+  ]
+}
+
 async function step(){
 
-
+  console.log(direction());
   await scan(player)
   const x = player.position.x
   const y = player.position.y
 
 
+
   let speed = 1
   if (player.energy>90) speed = 3
-  const endx = x + direction[0] * speed
-  const endy = y + direction[1] * speed
+  const endx = x + direction()[0] * speed
+  const endy = y + direction()[1] * speed
   await tryeat(player,endx, endy)//.then(()=>
   await action({action: 'move', x, y, endx, endy}).catch(e=>{console.log("walk error:",e)}).then(e=>{
     //if (e.energy>50){
@@ -41,10 +51,12 @@ async function step(){
 }
 
 
+
 async function tryeat(self,x,y){
   if (state.world[x][y] != null && (player.position.x != x || player.position.y != y))
     return await action({action:'delete', x, y}, self).catch(e=>console.error('eat error:',e))
 }
+
 
 
 
@@ -61,8 +73,8 @@ async function scan(bullet){
 }
 
 
-async function shoot(){
 
+async function shoot(){
 
   let dir = [...lastdirection]
   if (!dir[0] && !dir[1]) dir= [1,0]
@@ -83,37 +95,12 @@ async function shoot(){
     }
     fly(bullet )
   })
-
-
 }
 
 
-const keymap = new Map(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].map(key=>[key, false]))
-
-
-function setkeymap(key, active){
-  keymap.set(key, active)
-  direction = [keymap.get('ArrowRight') - keymap.get('ArrowLeft'), keymap.get('ArrowDown') - keymap.get('ArrowUp')]  
-  if (direction[0] || direction[1]){
-    lastdirection = [...direction]
-    if (!running){
-      running = true
-      walk()
-    }
-  }else{
-    running = false
-  }
-}
-
-
-document.addEventListener('keydown', e => {
-  if (e.key.startsWith("Arrow"))e.preventDefault()
-  setkeymap(e.key, true)
-})
-
-
-var lastdirection = direction.slice()
-document.addEventListener('keyup', e => {
-  setkeymap(e.key, false)
-  if (e.key == ' ') shoot()
+document.addEventListener("keydown", e=>{
+  console.log(e.key);
+  
+  console.log("walk");
+  walk()
 })
