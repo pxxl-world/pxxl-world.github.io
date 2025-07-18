@@ -1,9 +1,4 @@
-
-
-import { Act, State } from "./main";
-import { ActionType as ServerActionType, ActionResultVariant } from "./module_bindings";
-
-const script = `/**
+/**
  * @typedef {("Move" | "Put" | "Delete")} ActionType
  * @typedef {number[]} Pos
  * @typedef {number[]} Color
@@ -28,12 +23,10 @@ const script = `/**
  */
 
 
-function main(state, act) {
+export function main(state, act) {
 
   state.keyboard.subscribe(console.log);
-}` + "return main"
 
+}
 
-
-export const UserFunction = Function(script)() as (s:State, act:Act) => void
 

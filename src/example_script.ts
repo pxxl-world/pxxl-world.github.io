@@ -17,18 +17,21 @@ type Action = {
 
 
 type State = {
-  world:{
-    state:(null|string) [][],
-    subscribe: (fn: (focus: Pos|undefined)=>void)=>void,
-  }
-  input:{
-    ispressed:(s:string)=>boolean,
-    subscribe: (fn :(s:string) => void) => void
-  }
-}
-
+  world: {
+    pixels: (null | string)[][];
+    subscribe: (fn: (focus: Pos | undefined) => void) => () => void;
+    setPixel: (pos: Pos, color: string | null) => void;
+    getPixel: (pos: Pos) => string | null;
+  };
+  keyboard: {
+    isPressed: (key: string) => boolean;
+    subscribe: (fn: (key: string) => void) => () => void;
+  };
+};
 
 export function main(state:State, act:(action:Action)=>void){
+
+  state.keyboard.subscribe(console.log)
 
 }
 
