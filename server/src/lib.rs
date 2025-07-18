@@ -1,7 +1,7 @@
 
 // use std::{fmt::{self, Debug}, iter::Enumerate, time::Duration};
 
-use spacetimedb::{table, Identity, ReducerContext, ScheduleAt, SpacetimeType, Table, TimeDuration, Timestamp};
+use spacetimedb::{reducer, table, Identity, ReducerContext, ScheduleAt, SpacetimeType, Table, TimeDuration, Timestamp};
 
 
 // #[derive(Debug)]
@@ -44,7 +44,7 @@ pub struct ScheduledAction{
 
 #[spacetimedb::reducer]
 pub fn invoke_scheduled(ctx:&ReducerContext, args:ScheduledAction)-> Result<(),String>{
-  do_action(ctx, args.sender, args.action)?;
+  handle_action(ctx, args.sender, args.action)?;
   Ok(())
 }
 
@@ -98,6 +98,8 @@ fn sqdist(pos:u32, other:u32)->u32{
 #[spacetimedb::reducer]
 pub fn spawn(ctx:&ReducerContext)->Result<(), String>{
   let randpos = ctx.random::<u32>();
+
+  log::info!("delete {}", ctx.sender);
   ctx.db.person().conn().delete(ctx.sender);
   let mut player = Person{
     conn:ctx.sender,
@@ -125,20 +127,17 @@ pub fn spawn(ctx:&ReducerContext)->Result<(), String>{
 
 }
 
-
-
 #[spacetimedb::reducer]
 pub fn request_action(ctx:&ReducerContext, action:GameAction)->Result<(),String>{
-  make_action(ctx, ctx.sender, action)
+  handle_action(ctx, ctx.sender, action)
 }
 
 
-const TIMEERROR:&str = "TIMEERROR";
+pub fn handle_action(ctx:&ReducerContext, sender:Identity, action:GameAction)->Result<(), String>{
 
-pub fn make_action(ctx:&ReducerContext, sender:Identity, action:GameAction)->Result<(), String>{
   let aid = action.id;
   let res = do_action(ctx,  sender, action);
-  let mut person = ctx.db.person().conn().find(ctx.sender).ok_or("player not found")?;
+  let mut person = ctx.db.person().conn().find(sender).ok_or(format!("player not found {}", sender))?;
   person.result = Some(ActionResult{
     id: aid,
     result: match res{
@@ -170,9 +169,13 @@ fn do_action(ctx:&ReducerContext, sender:Identity, action:GameAction)->Result<Do
     return Ok(DoResult::Scheduled)
   }
 
-  let player = ctx.db.person().conn().find(sender).ok_or("player not found")?;
+  block.last_action = ctx.timestamp;
+
+  let player = ctx.db.person().conn().find(sender).ok_or("player not found 2")?;
   let mut  body = ctx.db.tile().id().find(player.bodytile).ok_or("body not found")?;
   body.energy += ctx.timestamp.duration_since(body.last_action).unwrap().as_millis().div_euclid(100) as u32;
+
+
 
   if block.owner != player.id{ return Err("illegal action".to_string()) }
 
