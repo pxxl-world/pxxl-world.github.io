@@ -6,7 +6,7 @@ import { DbConnection, GameAction, Tile, ActionType } from "./module_bindings";
 
 export type Color = [number,number,number]
 
-type Block = {
+export type Block = {
   move:(pos:Pos)=>Promise<void>
   del:(pos:Pos)=>Promise<void>
   put:(pos:Pos, color:Color, energy?:number) => Promise<Block>

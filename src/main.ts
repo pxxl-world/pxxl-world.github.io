@@ -9,7 +9,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 
 let dbtoken = new Writable("dbtoken", "")
 
-import { int2color, int2pos, makestate, State, world_size } from './world';
+import { Block, int2color, int2pos, makestate, State, world_size } from './world';
 
 DbConnection.builder()
 .withUri("ws://localhost:3000")
@@ -32,6 +32,7 @@ DbConnection.builder()
     if (!handle) return
     handle(res.result)
   }
+  // connect.reducers.spawn();
 
   connect.subscriptionBuilder()
   .onApplied(c=>{
@@ -46,18 +47,22 @@ DbConnection.builder()
       })
     }
     let state = makestate(send_action)
-    connect.reducers.spawn();
     connect.subscriptionBuilder()
     .onApplied(c=>{
       c.db.tile.onInsert((c,i) => {
         state.world.setPixel(int2pos(i.pos), i)
+        draw_world(state.world.pixels)
       })
       c.db.tile.onUpdate((u,o,n) => {
         state.world.setPixel(int2pos(o.pos), null);
         state.world.setPixel(int2pos(n.pos), n)
+        draw_world(state.world.pixels)
+
       })
       c.db.tile.onDelete((d, old) => {
         state.world.setPixel(int2pos(old.pos), null)
+        draw_world(state.world.pixels)
+
       })
     })
     .onError(console.error)
@@ -69,19 +74,28 @@ DbConnection.builder()
     c.db.person.onInsert((c,p)=>onPersonChange(p))
     c.db.person.onUpdate((c,o,n)=>onPersonChange(n))
     let player = c.db.person.conn.find(id)!
-    let bod = c.db.tile.id.find(player.bodytile)!
-    const move = () => {
-      bod.pos += 1;
-      send_action({
-        "player": bod.id,
-        "pos": bod.pos,
-        "typ": {"tag": "Move"},
-        "id" : actionid ++,
-      })
-      .then(move)
-      .catch(e=>console.error("action error:",e))
-    }
-    move()
+
+
+    // let mytile = c.db.tile.id.find(player.bodytile)
+    // if (!mytile) throw new Error("tile not found")
+    // let mybod = state.world.getPixel(int2pos(mytile.pos))
+
+    // console.log(mybod);
+    
+
+    // const move = () => {
+    //   bod.pos += 1;
+    //   send_action({
+    //     "player": bod.id,
+    //     "pos": bod.pos,
+    //     "typ": {"tag": "Move"},
+    //     "id" : actionid ++,
+    //   })
+    //   .then(move)
+    //   .catch(e=>console.error("action error:",e))
+    // }
+    // move()
+
   })
   .onError(console.error)
   .subscribe(`SELECT * FROM person WHERE conn == '${id.toHexString()}'`)
@@ -129,10 +143,13 @@ function draw_block(x:number, y:number, color:string){
   ctx.fillStyle = color
   ctx.fillRect(x * block_size, y * block_size, block_size, block_size)
 }
-function draw_world(pixels: (null | string)[][]){
+function draw_world(pixels: (null | Block)[][]){
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   pixels.forEach((row, x) => row.forEach((color, y) => {    
-    if(color !== null)draw_block(x, y, color)
+    if(color !== null)
+      {
+      draw_block(x, y, `rgb(${color.color[0]}, ${color.color[1]}, ${color.color[2]})`)
+    }
   }))
 }
 

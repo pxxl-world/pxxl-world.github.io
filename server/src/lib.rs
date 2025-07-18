@@ -95,6 +95,14 @@ fn sqdist(pos:u32, other:u32)->u32{
 }
 
 
+
+#[reducer(client_connected)]
+pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
+  spawn(ctx)
+}
+
+
+
 #[spacetimedb::reducer]
 pub fn spawn(ctx:&ReducerContext)->Result<(), String>{
   let randpos = ctx.random::<u32>();
