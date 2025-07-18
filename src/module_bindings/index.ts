@@ -34,10 +34,6 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
-import { IdentityConnected } from "./identity_connected_reducer.ts";
-export { IdentityConnected };
-import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
-export { IdentityDisconnected };
 import { InvokeScheduled } from "./invoke_scheduled_reducer.ts";
 export { InvokeScheduled };
 import { RequestAction } from "./request_action_reducer.ts";
@@ -102,14 +98,6 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
-    identity_connected: {
-      reducerName: "identity_connected",
-      argsType: IdentityConnected.getTypeScriptAlgebraicType(),
-    },
-    identity_disconnected: {
-      reducerName: "identity_disconnected",
-      argsType: IdentityDisconnected.getTypeScriptAlgebraicType(),
-    },
     invoke_scheduled: {
       reducerName: "invoke_scheduled",
       argsType: InvokeScheduled.getTypeScriptAlgebraicType(),
@@ -152,8 +140,6 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
-| { name: "IdentityConnected", args: IdentityConnected }
-| { name: "IdentityDisconnected", args: IdentityDisconnected }
 | { name: "InvokeScheduled", args: InvokeScheduled }
 | { name: "RequestAction", args: RequestAction }
 | { name: "Spawn", args: Spawn }
@@ -161,22 +147,6 @@ export type Reducer = never
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
-
-  onIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("identity_connected", callback);
-  }
-
-  removeOnIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("identity_connected", callback);
-  }
-
-  onIdentityDisconnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("identity_disconnected", callback);
-  }
-
-  removeOnIdentityDisconnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("identity_disconnected", callback);
-  }
 
   invokeScheduled(args: ScheduledAction) {
     const __args = { args };

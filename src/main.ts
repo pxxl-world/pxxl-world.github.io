@@ -1,6 +1,6 @@
 import { Writable } from './store'
 import { active_script } from './scripting'
-import { Action, ActionResultVariant, ActionType, DbConnection, EventContext, GameAction, Person, PutAction, ReducerEventContext, Tile } from './module_bindings';
+import { ActionResultVariant, ActionType, DbConnection, EventContext, GameAction, Person, PutAction, ReducerEventContext, Tile } from './module_bindings';
 
 // let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
 let backend_url = (window.location.hostname.includes('zmanifold'))?"https://zmanifold.com":'http://'+window.location.hostname+':5000'
@@ -40,6 +40,8 @@ DbConnection.builder()
   let actionqueue = new Map<number, (r:ActionResultVariant)=>void> ()
 
   const onPersonChange = (p:Person)=>{
+    console.log("person change");
+    
     let res = p.result
     if (!res) return
     let handle = actionqueue.get(res.id)
@@ -74,8 +76,10 @@ DbConnection.builder()
 
   const send_action = (action:GameAction)=>{
     return new Promise<void>((resolve, reject)=>{
-
+      console.log("action send");
+      
       actionqueue.set(action.id, res=>{
+        console.log("action done");
         if (res.tag == "Ok"){
           resolve()
         }else {
