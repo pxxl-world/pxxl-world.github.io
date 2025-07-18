@@ -34,22 +34,30 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
-import { Action } from "./action_reducer.ts";
-export { Action };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
 export { IdentityConnected };
 import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
 export { IdentityDisconnected };
+import { InvokeScheduled } from "./invoke_scheduled_reducer.ts";
+export { InvokeScheduled };
+import { RequestAction } from "./request_action_reducer.ts";
+export { RequestAction };
 import { Spawn } from "./spawn_reducer.ts";
 export { Spawn };
 
 // Import and reexport all table handle types
 import { PersonTableHandle } from "./person_table.ts";
 export { PersonTableHandle };
+import { ScheduledActionTableHandle } from "./scheduled_action_table.ts";
+export { ScheduledActionTableHandle };
 import { TileTableHandle } from "./tile_table.ts";
 export { TileTableHandle };
 
 // Import and reexport all types
+import { ActionResult } from "./action_result_type.ts";
+export { ActionResult };
+import { ActionResultVariant } from "./action_result_variant_type.ts";
+export { ActionResultVariant };
 import { ActionType } from "./action_type_type.ts";
 export { ActionType };
 import { GameAction } from "./game_action_type.ts";
@@ -58,6 +66,8 @@ import { Person } from "./person_type.ts";
 export { Person };
 import { PutAction } from "./put_action_type.ts";
 export { PutAction };
+import { ScheduledAction } from "./scheduled_action_type.ts";
+export { ScheduledAction };
 import { Tile } from "./tile_type.ts";
 export { Tile };
 
@@ -72,6 +82,15 @@ const REMOTE_MODULE = {
         colType: Person.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
       },
     },
+    scheduled_action: {
+      tableName: "scheduled_action",
+      rowType: ScheduledAction.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+      primaryKeyInfo: {
+        colName: "id",
+        colType: ScheduledAction.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
+      },
+    },
     tile: {
       tableName: "tile",
       rowType: Tile.getTypeScriptAlgebraicType(),
@@ -83,10 +102,6 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
-    action: {
-      reducerName: "action",
-      argsType: Action.getTypeScriptAlgebraicType(),
-    },
     identity_connected: {
       reducerName: "identity_connected",
       argsType: IdentityConnected.getTypeScriptAlgebraicType(),
@@ -94,6 +109,14 @@ const REMOTE_MODULE = {
     identity_disconnected: {
       reducerName: "identity_disconnected",
       argsType: IdentityDisconnected.getTypeScriptAlgebraicType(),
+    },
+    invoke_scheduled: {
+      reducerName: "invoke_scheduled",
+      argsType: InvokeScheduled.getTypeScriptAlgebraicType(),
+    },
+    request_action: {
+      reducerName: "request_action",
+      argsType: RequestAction.getTypeScriptAlgebraicType(),
     },
     spawn: {
       reducerName: "spawn",
@@ -129,30 +152,15 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
-| { name: "Action", args: Action }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
+| { name: "InvokeScheduled", args: InvokeScheduled }
+| { name: "RequestAction", args: RequestAction }
 | { name: "Spawn", args: Spawn }
 ;
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
-
-  action(action: GameAction) {
-    const __args = { action };
-    let __writer = new BinaryWriter(1024);
-    Action.getTypeScriptAlgebraicType().serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("action", __argsBuffer, this.setCallReducerFlags.actionFlags);
-  }
-
-  onAction(callback: (ctx: ReducerEventContext, action: GameAction) => void) {
-    this.connection.onReducer("action", callback);
-  }
-
-  removeOnAction(callback: (ctx: ReducerEventContext, action: GameAction) => void) {
-    this.connection.offReducer("action", callback);
-  }
 
   onIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("identity_connected", callback);
@@ -170,6 +178,38 @@ export class RemoteReducers {
     this.connection.offReducer("identity_disconnected", callback);
   }
 
+  invokeScheduled(args: ScheduledAction) {
+    const __args = { args };
+    let __writer = new BinaryWriter(1024);
+    InvokeScheduled.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("invoke_scheduled", __argsBuffer, this.setCallReducerFlags.invokeScheduledFlags);
+  }
+
+  onInvokeScheduled(callback: (ctx: ReducerEventContext, args: ScheduledAction) => void) {
+    this.connection.onReducer("invoke_scheduled", callback);
+  }
+
+  removeOnInvokeScheduled(callback: (ctx: ReducerEventContext, args: ScheduledAction) => void) {
+    this.connection.offReducer("invoke_scheduled", callback);
+  }
+
+  requestAction(action: GameAction) {
+    const __args = { action };
+    let __writer = new BinaryWriter(1024);
+    RequestAction.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("request_action", __argsBuffer, this.setCallReducerFlags.requestActionFlags);
+  }
+
+  onRequestAction(callback: (ctx: ReducerEventContext, action: GameAction) => void) {
+    this.connection.onReducer("request_action", callback);
+  }
+
+  removeOnRequestAction(callback: (ctx: ReducerEventContext, action: GameAction) => void) {
+    this.connection.offReducer("request_action", callback);
+  }
+
   spawn() {
     this.connection.callReducer("spawn", new Uint8Array(0), this.setCallReducerFlags.spawnFlags);
   }
@@ -185,9 +225,14 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
-  actionFlags: CallReducerFlags = 'FullUpdate';
-  action(flags: CallReducerFlags) {
-    this.actionFlags = flags;
+  invokeScheduledFlags: CallReducerFlags = 'FullUpdate';
+  invokeScheduled(flags: CallReducerFlags) {
+    this.invokeScheduledFlags = flags;
+  }
+
+  requestActionFlags: CallReducerFlags = 'FullUpdate';
+  requestAction(flags: CallReducerFlags) {
+    this.requestActionFlags = flags;
   }
 
   spawnFlags: CallReducerFlags = 'FullUpdate';
@@ -202,6 +247,10 @@ export class RemoteTables {
 
   get person(): PersonTableHandle {
     return new PersonTableHandle(this.connection.clientCache.getOrCreateTable<Person>(REMOTE_MODULE.tables.person));
+  }
+
+  get scheduledAction(): ScheduledActionTableHandle {
+    return new ScheduledActionTableHandle(this.connection.clientCache.getOrCreateTable<ScheduledAction>(REMOTE_MODULE.tables.scheduled_action));
   }
 
   get tile(): TileTableHandle {

@@ -38,6 +38,7 @@ export type GameAction = {
   typ: __ActionType,
   player: number,
   pos: number,
+  id: number,
 };
 
 /**
@@ -53,6 +54,7 @@ export namespace GameAction {
       new ProductTypeElement("typ", __ActionType.getTypeScriptAlgebraicType()),
       new ProductTypeElement("player", AlgebraicType.createU32Type()),
       new ProductTypeElement("pos", AlgebraicType.createU32Type()),
+      new ProductTypeElement("id", AlgebraicType.createU32Type()),
     ]);
   }
 

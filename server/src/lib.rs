@@ -1,24 +1,25 @@
 
-use std::fmt::{self, Debug};
+// use std::{fmt::{self, Debug}, iter::Enumerate, time::Duration};
 
-use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, Timestamp};
+use spacetimedb::{table, Identity, ReducerContext, ScheduleAt, SpacetimeType, Table, TimeDuration, Timestamp};
 
 
-#[derive(Debug)]
-#[spacetimedb::table(name = person, public)]
+// #[derive(Debug)]
+#[table(name = person, public)]
 pub struct Person {
   #[primary_key]
   conn: Identity,
   #[unique]
   id: u64,
   bodytile:u32,
+  result: Option<ActionResult>,
 }
 
 const SIDE:usize = 1 << 7;
 
 const WORLDSIZE:usize = SIDE * SIDE;
 
-#[spacetimedb::table(name=tile, public)]
+#[table(name=tile, public)]
 pub struct Tile{
   #[primary_key]
   pos: u32,
@@ -31,35 +32,21 @@ pub struct Tile{
   energy: u32,
 }
 
-
-#[spacetimedb::reducer(init)]
-pub fn init(_ctx: &ReducerContext) {
-  // Called when the module is initially published
-}
-
-#[spacetimedb::reducer(client_connected)]
-pub fn identity_connected(_ctx: &ReducerContext) {
-  // Called everytime a new client connects
-}
-
-#[spacetimedb::reducer(client_disconnected)]
-pub fn identity_disconnected(_ctx: &ReducerContext) {
-  // Called everytime a client disconnects
-}
-
-pub enum ActionError{
-    IDClash
-}
-
-impl Debug for ActionError{
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self{
-        ActionError::IDClash => f.write_str("IDClash")
-    }
-  }
+#[table(name=scheduled_action, scheduled(invoke_scheduled))]
+pub struct ScheduledAction{
+  #[primary_key]
+  id: u64, // id of the Tile that requested it upcasted
+  scheduled_at:ScheduleAt,
+  action:GameAction,
+  sender:Identity,
 }
 
 
+#[spacetimedb::reducer]
+pub fn invoke_scheduled(ctx:&ReducerContext, args:ScheduledAction)-> Result<(),String>{
+  do_action(ctx, args.sender, args.action)?;
+  Ok(())
+}
 
 
 #[derive(SpacetimeType)]
@@ -68,6 +55,7 @@ pub enum ActionType {
   Delete,
   Move,
 }
+
 
 #[derive(SpacetimeType)]
 pub struct PutAction {
@@ -81,6 +69,19 @@ pub struct GameAction{
   typ: ActionType,
   player:u32,
   pos: u32,
+  id: u32,
+}
+
+#[derive(SpacetimeType)]
+pub struct ActionResult {
+  pub id: u32,
+  pub result: ActionResultVariant,
+}
+
+#[derive(SpacetimeType)]
+pub enum ActionResultVariant {
+  Ok,
+  Err { msg: String },
 }
 
 fn tocoord(pos:u32) -> (u32, u32){
@@ -102,6 +103,7 @@ pub fn spawn(ctx:&ReducerContext)->Result<(), String>{
     conn:ctx.sender,
     id: 0,
     bodytile:0,
+    result: None,
   };
 
   player.id = ctx.random();
@@ -126,13 +128,49 @@ pub fn spawn(ctx:&ReducerContext)->Result<(), String>{
 
 
 #[spacetimedb::reducer]
-pub fn action(ctx:&ReducerContext, action:GameAction)->Result<(), String>{
+pub fn request_action(ctx:&ReducerContext, action:GameAction)->Result<(),String>{
+  make_action(ctx, ctx.sender, action)
+}
+
+
+const TIMEERROR:&str = "TIMEERROR";
+
+pub fn make_action(ctx:&ReducerContext, sender:Identity, action:GameAction)->Result<(), String>{
+  let aid = action.id;
+  let res = do_action(ctx,  sender, action);
+  let mut person = ctx.db.person().conn().find(ctx.sender).ok_or("player not found")?;
+  person.result = Some(ActionResult{
+    id: aid,
+    result: match res{
+      Ok(DoResult::Done) =>ActionResultVariant::Ok,
+      Ok(DoResult::Scheduled) => return Ok(()),
+      Err(msg)=> ActionResultVariant::Err { msg },
+    }
+  });
+  ctx.db.person().conn().update(person);
+  Ok(())
+}
+
+enum DoResult {
+  Done,
+  Scheduled
+}
+
+fn do_action(ctx:&ReducerContext, sender:Identity, action:GameAction)->Result<DoResult, String>{
   let mut block = ctx.db.tile().id().find(action.player).ok_or("not found")?;
 
   let deltat = ctx.timestamp.duration_since(block.last_action).unwrap().as_millis();
-  if deltat < 100 {return Err("only 10 actions per second allowed.".to_string())}
+  if deltat < 100 {
+    ctx.db.scheduled_action().id().delete(action.player as u64);
+    ctx.db.scheduled_action().insert(ScheduledAction{
+      id: action.player as u64,
+      scheduled_at: (ctx.timestamp + TimeDuration::from_micros(100*1000)).into(),
+      action, sender,
+    });
+    return Ok(DoResult::Scheduled)
+  }
 
-  let player = ctx.db.person().conn().find(ctx.sender).ok_or("player not found")?;
+  let player = ctx.db.person().conn().find(sender).ok_or("player not found")?;
   let mut  body = ctx.db.tile().id().find(player.bodytile).ok_or("body not found")?;
   body.energy += ctx.timestamp.duration_since(body.last_action).unwrap().as_millis().div_euclid(100) as u32;
 
@@ -163,6 +201,10 @@ pub fn action(ctx:&ReducerContext, action:GameAction)->Result<(), String>{
       10 + putaction.energy as i32
     },
     ActionType::Move => {
+
+      if ctx.db.tile().pos().find(action.pos).is_some(){
+        return Err("position blocked".to_string())
+      }
       block.pos = action.pos;
       1
     },
@@ -172,7 +214,7 @@ pub fn action(ctx:&ReducerContext, action:GameAction)->Result<(), String>{
   }
   block.energy = (block.energy as i32 - cost) as u32;
   ctx.db.tile().id().update(block);
-  Ok(())
+  Ok(DoResult::Done)
 
 }
 

@@ -35,14 +35,14 @@ import {
 
 import { GameAction as __GameAction } from "./game_action_type";
 
-export type Action = {
+export type RequestAction = {
   action: __GameAction,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace Action {
+export namespace RequestAction {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -53,12 +53,12 @@ export namespace Action {
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: Action): void {
-    Action.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: RequestAction): void {
+    RequestAction.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): Action {
-    return Action.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): RequestAction {
+    return RequestAction.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

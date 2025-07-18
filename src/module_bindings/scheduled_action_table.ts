@@ -32,25 +32,25 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-import { Person } from "./person_type";
-import { ActionResult as __ActionResult } from "./action_result_type";
+import { ScheduledAction } from "./scheduled_action_type";
+import { GameAction as __GameAction } from "./game_action_type";
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `person`.
+ * Table handle for the table `scheduled_action`.
  *
- * Obtain a handle from the [`person`] property on [`RemoteTables`],
- * like `ctx.db.person`.
+ * Obtain a handle from the [`scheduledAction`] property on [`RemoteTables`],
+ * like `ctx.db.scheduledAction`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.person.on_insert(...)`.
+ * like `ctx.db.scheduledAction.on_insert(...)`.
  */
-export class PersonTableHandle {
-  tableCache: TableCache<Person>;
+export class ScheduledActionTableHandle {
+  tableCache: TableCache<ScheduledAction>;
 
-  constructor(tableCache: TableCache<Person>) {
+  constructor(tableCache: TableCache<ScheduledAction>) {
     this.tableCache = tableCache;
   }
 
@@ -58,46 +58,24 @@ export class PersonTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<Person> {
+  iter(): Iterable<ScheduledAction> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `conn` unique index on the table `person`,
+   * Access to the `id` unique index on the table `scheduled_action`,
    * which allows point queries on the field of the same name
-   * via the [`PersonConnUnique.find`] method.
+   * via the [`ScheduledActionIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.person.conn().find(...)`.
+   * like `ctx.db.scheduledAction.id().find(...)`.
    *
-   * Get a handle on the `conn` unique index on the table `person`.
-   */
-  conn = {
-    // Find the subscribed row whose `conn` column value is equal to `col_val`,
-    // if such a row is present in the client cache.
-    find: (col_val: Identity): Person | undefined => {
-      for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.conn, col_val)) {
-          return row;
-        }
-      }
-    },
-  };
-  /**
-   * Access to the `id` unique index on the table `person`,
-   * which allows point queries on the field of the same name
-   * via the [`PersonIdUnique.find`] method.
-   *
-   * Users are encouraged not to explicitly reference this type,
-   * but to directly chain method calls,
-   * like `ctx.db.person.id().find(...)`.
-   *
-   * Get a handle on the `id` unique index on the table `person`.
+   * Get a handle on the `id` unique index on the table `scheduled_action`.
    */
   id = {
     // Find the subscribed row whose `id` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): Person | undefined => {
+    find: (col_val: bigint): ScheduledAction | undefined => {
       for (let row of this.tableCache.iter()) {
         if (deepEqual(row.id, col_val)) {
           return row;
@@ -106,27 +84,27 @@ export class PersonTableHandle {
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: Person) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: ScheduledAction) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: Person) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: ScheduledAction) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: Person) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: ScheduledAction) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: Person) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: ScheduledAction) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: Person, newRow: Person) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: ScheduledAction, newRow: ScheduledAction) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: Person, newRow: Person) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: ScheduledAction, newRow: ScheduledAction) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}

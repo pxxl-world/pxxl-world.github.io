@@ -32,38 +32,38 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-import { ActionResult as __ActionResult } from "./action_result_type";
+import { GameAction as __GameAction } from "./game_action_type";
 
-export type Person = {
-  conn: Identity,
+export type ScheduledAction = {
   id: bigint,
-  bodytile: number,
-  result: __ActionResult | undefined,
+  scheduledAt: { tag: "Interval", value: TimeDuration } | { tag: "Time", value: Timestamp },
+  action: __GameAction,
+  sender: Identity,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace Person {
+export namespace ScheduledAction {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("conn", AlgebraicType.createIdentityType()),
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
-      new ProductTypeElement("bodytile", AlgebraicType.createU32Type()),
-      new ProductTypeElement("result", AlgebraicType.createOptionType(__ActionResult.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("scheduledAt", AlgebraicType.createScheduleAtType()),
+      new ProductTypeElement("action", __GameAction.getTypeScriptAlgebraicType()),
+      new ProductTypeElement("sender", AlgebraicType.createIdentityType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: Person): void {
-    Person.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: ScheduledAction): void {
+    ScheduledAction.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): Person {
-    return Person.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): ScheduledAction {
+    return ScheduledAction.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

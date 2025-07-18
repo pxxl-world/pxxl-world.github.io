@@ -32,40 +32,34 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-import { ActionResult as __ActionResult } from "./action_result_type";
 
-export type Person = {
-  conn: Identity,
-  id: bigint,
-  bodytile: number,
-  result: __ActionResult | undefined,
+import { ScheduledAction as __ScheduledAction } from "./scheduled_action_type";
+
+export type InvokeScheduled = {
+  args: __ScheduledAction,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace Person {
+export namespace InvokeScheduled {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("conn", AlgebraicType.createIdentityType()),
-      new ProductTypeElement("id", AlgebraicType.createU64Type()),
-      new ProductTypeElement("bodytile", AlgebraicType.createU32Type()),
-      new ProductTypeElement("result", AlgebraicType.createOptionType(__ActionResult.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("args", __ScheduledAction.getTypeScriptAlgebraicType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: Person): void {
-    Person.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: InvokeScheduled): void {
+    InvokeScheduled.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): Person {
-    return Person.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): InvokeScheduled {
+    return InvokeScheduled.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

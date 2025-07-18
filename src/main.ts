@@ -1,6 +1,6 @@
 import { Writable } from './store'
 import { active_script } from './scripting'
-import { Action, ActionType, DbConnection, EventContext, GameAction, PutAction, ReducerEventContext, Tile } from './module_bindings';
+import { Action, ActionResultVariant, ActionType, DbConnection, EventContext, GameAction, Person, PutAction, ReducerEventContext, Tile } from './module_bindings';
 
 // let backend_url = (window.location.hostname === 'localhost')?`http://localhost:5000`:"https://zmanifold.com"
 let backend_url = (window.location.hostname.includes('zmanifold'))?"https://zmanifold.com":'http://'+window.location.hostname+':5000'
@@ -15,6 +15,7 @@ DbConnection.builder()
 .withModuleName("pixel")
 .withToken(dbtoken.value)
 .onConnect((connect, id, token )=>{
+  let actionid = 0;
   console.log("connected.");
   dbtoken.set(token)
   connect.reducers.spawn();
@@ -35,8 +36,22 @@ DbConnection.builder()
   .onError(console.error)
   .subscribe(`SELECT * FROM tile`)
 
+
+  let actionqueue = new Map<number, (r:ActionResultVariant)=>void> ()
+
+  const onPersonChange = (p:Person)=>{
+    let res = p.result
+    if (!res) return
+    let handle = actionqueue.get(res.id)
+    if (!handle) return
+    handle(res.result)
+  }
+
   connect.subscriptionBuilder()
   .onApplied(c=>{
+
+    c.db.person.onInsert((c,p)=>onPersonChange(p))
+    c.db.person.onUpdate((c,o,n)=>onPersonChange(n))
     let player = c.db.person.conn.find(id)!
     let bod = c.db.tile.id.find(player.bodytile)!
     const move = () => {
@@ -45,7 +60,8 @@ DbConnection.builder()
         {
           "player": bod.id,
           "pos": bod.pos,
-          "typ": {"tag": "Move"}
+          "typ": {"tag": "Move"},
+          "id" : actionid ++,
         })
       .catch(e=>console.error(e))
       setTimeout(move, 1000/10)
@@ -56,28 +72,16 @@ DbConnection.builder()
   .onError(console.error)
   .subscribe(`SELECT * FROM person WHERE conn == '${id.toHexString()}'`)
 
-  connect.reducers.onAction((e, a)=>{
-    actionqueue.get(actionkey(a))?.(e)
-  })
-
-  let actionqueue = new Map<actionKey, (ctx: ReducerEventContext)=>void> ()
-
-  type actionKey = `${number}:${number}:${string}`
-
-  const actionkey = (g:GameAction):actionKey=>`${g.pos}:${g.player}:${g.typ.tag}`
-
   const send_action = (action:GameAction)=>{
     return new Promise<void>((resolve, reject)=>{
 
-      actionqueue.set(actionkey(action), ctx=>{
-        if (ctx.event.status.tag == "Committed"){
+      actionqueue.set(action.id, res=>{
+        if (res.tag == "Ok"){
           resolve()
-        }else{
-          reject(ctx.event.status)
+        }else {
+          reject(res.value)
         }
-        actionqueue.delete(actionkey(action))
       })
-      connect.reducers.action(action)
     })
   }
 
@@ -97,11 +101,11 @@ const update_world = (c:EventContext)=>{
 }
 
 const int2color = (k:number) =>{
-  k = k >> 8
+  k >>= 8
   let b = k & 255;
-  k = k >> 8
+  k >>= 8
   let g = k & 255;
-  k = k >> 8
+  k >>= 8
   let r = k & 255;
   return `rgb(${r}, ${g}, ${b})`
 }
